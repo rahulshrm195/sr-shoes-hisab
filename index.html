@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SR Shoes Hisab</title>
+<meta name="theme-color" content="#0f1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hisab">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDKs -->
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-messaging-compat.min.js"></script>
+
+<style>
+/* ── Variables ── */
+:root {
+  --bg:     #0f1117;
+  --bg2:    #181b24;
+  --bg3:    #1f2333;
+  --border: rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.13);
+  --text:   #e8e6e0;
+  --muted:  #7a7870;
+  --hint:   #4a4840;
+  --accent: #f0a500;
+  --green:  #3dbf7a;
+  --red:    #e05252;
+  --blue:   #4a9eff;
+  --r:      10px;
+  --rl:     16px;
+  --mono:   'DM Mono', monospace;
+  --sans:   'Syne', sans-serif;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { font-size:15px; -webkit-tap-highlight-color:transparent; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text); min-height:100dvh; overflow-x:hidden; }
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-thumb { background:var(--hint); border-radius:4px; }
+
+/* ── Auth ── */
+#auth-screen { min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; }
+#auth-screen::before { content:''; position:fixed; inset:0; background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(240,165,0,0.08),transparent 70%); pointer-events:none; }
+.auth-logo { font-size:2rem; font-weight:700; letter-spacing:-.03em; color:var(--text); }
+.auth-logo span { color:var(--accent); }
+.auth-sub { font-size:.8rem; color:var(--muted); font-family:var(--mono); margin:.25rem 0 .5rem; letter-spacing:.08em; }
+.auth-ver { font-size:.65rem; color:var(--hint); font-family:var(--mono); margin-bottom:2.5rem; letter-spacing:.08em; }
+.auth-card { width:100%; max-width:340px; background:var(--bg2); border:.5px solid var(--border2); border-radius:var(--rl); padding:1.75rem; }
+.auth-card label { display:block; font-size:.72rem; font-family:var(--mono); color:var(--muted); letter-spacing:.1em; margin-bottom:6px; margin-top:1rem; }
+.auth-card label:first-child { margin-top:0; }
+.auth-card input { width:100%; background:var(--bg3); border:.5px solid var(--border); border-radius:var(--r); padding:10px 12px; font-size:.93rem; font-family:var(--mono); color:var(--text); outline:none; transition:border-color .2s; }
+.auth-card input:focus { border-color:var(--accent); }
+.btn-primary { width:100%; margin-top:1.25rem; padding:12px; background:var(--accent); color:#0f1117; border:none; border-radius:var(--r); font-family:var(--sans); font-size:.9rem; font-weight:700; cursor:pointer; transition:opacity .15s,transform .1s; letter-spacing:.02em; }
+.btn-primary:active { transform:scale(.98); }
+.auth-error { font-size:.78rem; color:var(--red); font-family:var(--mono); margin-top:.75rem; text-align:center; min-height:1.2em; }
+
+/* ── App shell ── */
+#app-screen { display:none; flex-direction:column; min-height:100dvh; }
+#app-screen.visible { display:flex; }
+
+.topbar { height:52px; display:flex; align-items:center; padding:0 1rem; background:var(--bg); border-bottom:.5px solid var(--border); position:sticky; top:0; z-index:50; gap:8px; }
+.topbar-logo { font-size:1rem; font-weight:700; color:var(--text); letter-spacing:-.02em; }
+.topbar-logo span { color:var(--accent); }
+.topbar-date { font-size:.72rem; font-family:var(--mono); color:var(--muted); margin-left:auto; }
+.topbar-ver { font-size:.6rem; font-family:var(--mono); color:var(--hint); letter-spacing:.04em; }
+.topbar-user { width:28px; height:28px; border-radius:50%; background:var(--bg3); border:.5px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:600; color:var(--accent); cursor:pointer; font-family:var(--mono); flex-shrink:0; }
+
+.notif-bar { display:none; background:rgba(240,165,0,.06); border-bottom:.5px solid rgba(240,165,0,.2); padding:9px 1rem; font-size:.75rem; font-family:var(--mono); color:var(--muted); align-items:center; gap:8px; }
+.notif-bar.show { display:flex; }
+.notif-bar button { margin-left:auto; background:var(--accent); color:#0f1117; border:none; border-radius:6px; padding:4px 12px; font-size:.72rem; font-family:var(--mono); cursor:pointer; font-weight:600; }
+
+/* ── Nav ── */
+.nav-tabs { display:flex; background:var(--bg); border-bottom:.5px solid var(--border); overflow-x:auto; scrollbar-width:none; }
+.nav-tabs::-webkit-scrollbar { display:none; }
+.nav-tab { flex:1; min-width:64px; padding:10px 6px 9px; background:none; border:none; border-bottom:2px solid transparent; color:var(--muted); font-family:var(--mono); font-size:.65rem; letter-spacing:.06em; cursor:pointer; transition:color .15s,border-color .15s; text-transform:uppercase; white-space:nowrap; }
+.nav-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* ── Main ── */
+.main { flex:1; padding:1rem; padding-bottom:2rem; }
+.section { display:none; }
+.section.active { display:block; }
+
+/* ── Cards ── */
+.card { background:var(--bg2); border:.5px solid var(--border); border-radius:var(--rl); padding:1rem 1.1rem; margin-bottom:.875rem; }
+.card-title { font-size:.65rem; font-family:var(--mono); color:var(--muted); letter-spacing:.12em; text-transform:uppercase; margin-bottom:1rem; }
+
+/* ── Denom ── */
+.denom-section-label { font-size:.65rem; font-family:var(--mono); color:var(--muted); letter-spacing:.12em; text-transform:uppercase; margin:1rem 0 8px; }
+.denom-section-label:first-child { margin-top:0; }
+.denom-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.denom-row { display:flex; flex-direction:column; gap:4px; background:var(--bg3); border-radius:var(--r); padding:8px 10px; }
+.denom-row.coin { background:var(--bg); border:.5px solid var(--border); }
+.denom-label { font-family:var(--mono); font-size:.72rem; color:var(--muted); }
+.denom-row.coin .denom-label { color:var(--hint); }
+.denom-row input { background:transparent; border:none; outline:none; font-family:var(--mono); font-size:1rem; font-weight:500; color:var(--text); width:100%; }
+.denom-sub { font-family:var(--mono); font-size:.68rem; color:var(--accent); min-height:.9rem; }
+.total-row { display:flex; justify-content:space-between; align-items:baseline; padding-top:.875rem; margin-top:.875rem; border-top:.5px solid var(--border); }
+.total-label { font-size:.75rem; color:var(--muted); font-family:var(--mono); }
+.total-val { font-family:var(--mono); font-size:1.5rem; font-weight:500; color:var(--accent); letter-spacing:-.02em; }
+
+/* ── Carry banner ── */
+.carry-banner { display:flex; align-items:center; gap:10px; background:rgba(240,165,0,.06); border:.5px solid rgba(240,165,0,.2); border-radius:var(--r); padding:10px 12px; margin-bottom:.875rem; font-size:.78rem; font-family:var(--mono); }
+.carry-expected { color:var(--accent); font-weight:500; }
+.carry-badge { margin-left:auto; font-size:.65rem; padding:3px 8px; border-radius:20px; font-family:var(--mono); font-weight:500; }
+.carry-badge.match { background:rgba(61,191,122,.15); color:var(--green); }
+.carry-badge.mismatch { background:rgba(224,82,82,.15); color:var(--red); }
+.carry-badge.pending { background:rgba(120,120,120,.15); color:var(--muted); }
+.mismatch-row { margin-bottom:.875rem; }
+.mismatch-row input { width:100%; background:var(--bg3); border:.5px solid var(--red); border-radius:var(--r); padding:8px 10px; font-size:.82rem; font-family:var(--mono); color:var(--text); outline:none; }
+
+/* ── Textarea ── */
+textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); border-radius:var(--r); padding:10px 12px; font-size:.82rem; font-family:var(--mono); color:var(--text); resize:vertical; min-height:60px; outline:none; }
+
+/* ── Expenses ── */
+.exp-list { margin-bottom:10px; }
+.exp-row { display:grid; grid-template-columns:1fr 100px 80px 30px; gap:6px; align-items:center; margin-bottom:6px; }
+.exp-row input,.exp-row select { background:var(--bg3); border:.5px solid var(--border); border-radius:var(--r); padding:8px 10px; font-size:.8rem; font-family:var(--mono); color:var(--text); outline:none; width:100%; }
+.exp-del { background:none; border:none; color:var(--hint); cursor:pointer; font-size:1rem; padding:4px; transition:color .15s; line-height:1; }
+.exp-del:hover { color:var(--red); }
+.btn-add { background:transparent; border:.5px dashed var(--border2); border-radius:var(--r); padding:8px 14px; font-size:.78rem; font-family:var(--mono); color:var(--muted); cursor:pointer; width:100%; transition:color .15s; }
+.btn-add:hover { color:var(--text); }
+
+/* ── Sales ── */
+.sales-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.sales-row label { font-size:.72rem; font-family:var(--mono); color:var(--muted); min-width:96px; }
+.sales-row input { flex:1; background:var(--bg3); border:.5px solid var(--border); border-radius:var(--r); padding:9px 12px; font-family:var(--mono); font-size:.9rem; color:var(--text); outline:none; transition:border-color .2s; }
+.sales-row input:focus { border-color:var(--accent); }
+
+/* ── Recon ── */
+.recon-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:.82rem; border-bottom:.5px solid var(--border); }
+.recon-row:last-child { border-bottom:none; }
+.recon-lbl { color:var(--muted); font-family:var(--mono); }
+.recon-val { font-family:var(--mono); color:var(--text); }
+.diff-bar { display:flex; justify-content:space-between; align-items:center; padding:10px 0 4px; }
+.diff-label { font-size:.88rem; font-weight:600; }
+.diff-val { font-family:var(--mono); font-size:1.1rem; font-weight:500; }
+.diff-val.balanced { color:var(--green); }
+.diff-val.over { color:var(--blue); }
+.diff-val.short { color:var(--red); }
+
+/* ── Metrics ── */
+.metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:.875rem; }
+.metric { background:var(--bg3); border-radius:var(--r); padding:10px 12px; }
+.metric-lbl { font-size:.65rem; font-family:var(--mono); color:var(--muted); letter-spacing:.06em; margin-bottom:4px; }
+.metric-val { font-family:var(--mono); font-size:1rem; font-weight:500; color:var(--text); }
+.metric-val.green { color:var(--green); }
+.metric-val.red { color:var(--red); }
+.metric-val.amber { color:var(--accent); }
+
+/* ── Summary ── */
+.sum-row { display:flex; justify-content:space-between; font-size:.82rem; padding:5px 0; border-bottom:.5px solid var(--border); font-family:var(--mono); }
+.sum-row:last-child { border-bottom:none; }
+.sum-row .sl { color:var(--muted); }
+.sum-row .sv { color:var(--text); }
+.sum-row.strong .sl { color:var(--text); }
+.sum-row.strong .sv { color:var(--accent); font-weight:500; }
+.sec-heading { font-size:.65rem; font-family:var(--mono); color:var(--muted); letter-spacing:.12em; text-transform:uppercase; margin:0 0 8px; }
+
+/* ── Chart ── */
+.chart-bar-wrap { display:flex; align-items:flex-end; gap:4px; height:80px; margin:12px 0 4px; }
+.chart-bar { flex:1; background:var(--accent); border-radius:4px 4px 0 0; opacity:.7; min-height:4px; cursor:pointer; }
+.chart-bar:hover { opacity:1; }
+.chart-labels { display:flex; gap:4px; }
+.chart-labels span { flex:1; text-align:center; font-size:.58rem; font-family:var(--mono); color:var(--hint); }
+
+/* ── Customers ── */
+.customer-item { display:flex; align-items:center; gap:10px; background:var(--bg3); border-radius:var(--r); padding:10px 12px; cursor:pointer; margin-bottom:6px; transition:background .15s; }
+.customer-item:hover { background:var(--bg2); }
+.avatar { width:32px; height:32px; border-radius:50%; background:rgba(240,165,0,.1); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; color:var(--accent); font-family:var(--mono); flex-shrink:0; }
+.customer-name { font-size:.88rem; font-weight:600; }
+.customer-phone { font-size:.72rem; font-family:var(--mono); color:var(--muted); }
+.customer-bal { margin-left:auto; font-family:var(--mono); font-size:.85rem; font-weight:500; }
+.customer-bal.cr { color:var(--green); }
+.customer-bal.dr { color:var(--red); }
+.customer-bal.zero { color:var(--muted); }
+.ledger-entry { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:.5px solid var(--border); font-size:.8rem; }
+.ledger-entry:last-child { border-bottom:none; }
+.le-amt { font-family:var(--mono); font-weight:500; }
+.le-amt.cr { color:var(--green); }
+.le-amt.dr { color:var(--red); }
+.le-date { font-size:.68rem; font-family:var(--mono); color:var(--hint); margin-top:2px; }
+
+/* ── Staff ── */
+.staff-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:.5px solid var(--border); }
+.staff-item:last-child { border-bottom:none; }
+.role-badge { font-size:.62rem; padding:2px 7px; border-radius:20px; font-family:var(--mono); font-weight:500; margin-left:auto; }
+.role-owner   { background:rgba(240,165,0,.15); color:var(--accent); }
+.role-manager { background:rgba(74,158,255,.15); color:var(--blue); }
+.role-staff   { background:rgba(120,120,120,.12); color:var(--muted); }
+
+/* ── Settings ── */
+.setting-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:.5px solid var(--border); font-size:.82rem; }
+.setting-row:last-child { border-bottom:none; }
+.setting-row label { color:var(--muted); font-family:var(--mono); }
+.setting-row input { background:var(--bg3); border:.5px solid var(--border); border-radius:6px; padding:5px 10px; font-family:var(--mono); font-size:.82rem; color:var(--text); outline:none; width:110px; text-align:right; }
+
+/* ── Buttons ── */
+.btn-save { width:100%; padding:12px; background:var(--accent); color:#0f1117; border:none; border-radius:var(--r); font-family:var(--sans); font-size:.9rem; font-weight:700; cursor:pointer; transition:opacity .15s,transform .1s; margin-top:.5rem; }
+.btn-save:active { transform:scale(.98); }
+.btn-save:disabled { opacity:.4; cursor:not-allowed; }
+.btn-save.saved { background:var(--green); color:#fff; }
+.btn-outline { background:transparent; border:.5px solid var(--border2); border-radius:var(--r); padding:9px 14px; font-family:var(--mono); font-size:.78rem; color:var(--text); cursor:pointer; transition:background .15s; }
+.btn-outline:hover { background:var(--bg3); }
+
+/* ── Modal ── */
+.modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:100; align-items:flex-end; justify-content:center; }
+.modal-backdrop.open { display:flex; }
+.modal { background:var(--bg2); border:.5px solid var(--border2); border-radius:var(--rl) var(--rl) 0 0; padding:1.5rem; width:100%; max-width:480px; max-height:80dvh; overflow-y:auto; animation:slideUp .2s ease; }
+@keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-title { font-size:1rem; font-weight:700; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center; }
+.modal-close { background:none; border:none; color:var(--muted); font-size:1.1rem; cursor:pointer; padding:2px 6px; }
+.modal input,.modal select { width:100%; background:var(--bg3); border:.5px solid var(--border); border-radius:var(--r); padding:9px 12px; font-family:var(--mono); font-size:.85rem; color:var(--text); outline:none; margin-bottom:10px; }
+.modal label { display:block; font-size:.68rem; font-family:var(--mono); color:var(--muted); letter-spacing:.08em; margin-bottom:5px; margin-top:10px; }
+
+/* ── Toast ── */
+.toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(10px); background:var(--bg3); border:.5px solid var(--border2); border-radius:100px; padding:9px 20px; font-size:.78rem; font-family:var(--mono); color:var(--text); z-index:200; opacity:0; transition:opacity .2s,transform .2s; pointer-events:none; white-space:nowrap; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── Spinner ── */
+.spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; margin:2rem auto; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ── Desktop 768px+ ── */
+@media (min-width:768px) {
+  html { font-size:16px; }
+  .topbar { padding:0 2rem; height:58px; }
+  .topbar-logo { font-size:1.15rem; }
+  .nav-tabs { padding:0 1rem; }
+  .nav-tab { font-size:.7rem; padding:12px 14px 11px; flex:none; }
+  .main { max-width:1000px; margin:0 auto; padding:1.5rem 2rem 3rem; }
+  .card { padding:1.25rem 1.5rem; }
+  .denom-grid { grid-template-columns:repeat(6,1fr); gap:10px; }
+  .metrics { grid-template-columns:repeat(4,1fr); gap:12px; }
+  .metrics.two { grid-template-columns:repeat(4,1fr); }
+  .exp-row { grid-template-columns:1fr 150px 110px 34px; gap:10px; }
+  .total-val { font-size:1.8rem; }
+  .chart-bar-wrap { height:120px; }
+  .modal-backdrop { align-items:center; }
+  .modal { border-radius:var(--rl); animation:fadeIn .15s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
+  .auth-card { max-width:380px; padding:2rem; }
+  .auth-logo { font-size:2.5rem; }
+}
+@media (min-width:1100px) {
+  .main { max-width:1100px; }
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-logo">SR <span>Shoes</span></div>
+  <div class="auth-sub">hisab.srshoe.in</div>
+  <div class="auth-ver">v1.0.3</div>
+  <div class="auth-card">
+    <label>Email</label>
+    <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
+    <label>Password</label>
+    <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn-primary" id="btn-login">Sign in</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="notif-bar" id="notif-bar">
+    <span>Enable notifications for EOD reminders</span>
+    <button id="btn-enable-notif">Enable</button>
+  </div>
+  <div class="topbar">
+    <div class="topbar-logo">SR <span>Shoes</span></div>
+    <div class="topbar-date" id="topbar-date"></div>
+    <div class="topbar-ver">v1.0.3</div>
+    <div class="topbar-user" id="topbar-user">?</div>
+  </div>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" data-tab="opening">Opening</button>
+    <button class="nav-tab" data-tab="expenses">Expenses</button>
+    <button class="nav-tab" data-tab="closing">Closing</button>
+    <button class="nav-tab" data-tab="summary">Summary</button>
+    <button class="nav-tab" data-tab="monthly">Monthly</button>
+    <button class="nav-tab" data-tab="customers">Ledger</button>
+    <button class="nav-tab" data-tab="staff">Staff</button>
+    <button class="nav-tab" data-tab="settings">Settings</button>
+  </nav>
+  <div class="main">
+
+    <!-- OPENING -->
+    <div class="section active" id="section-opening">
+      <div class="carry-banner" id="carry-banner" style="display:none">
+        <span>&#8617;</span>
+        <div>
+          <div style="color:var(--muted);font-size:.65rem;letter-spacing:.08em">YESTERDAY'S CLOSING</div>
+          <div>Expected: <span class="carry-expected" id="carry-expected-val">&#8377;0</span></div>
+        </div>
+        <span class="carry-badge pending" id="carry-badge">Pending</span>
+      </div>
+      <div class="mismatch-row" id="mismatch-row" style="display:none">
+        <input id="mismatch-reason" placeholder="Reason for mismatch (e.g. owner took home &#8377;2000)">
+      </div>
+      <div class="card">
+        <div class="card-title">Cash count &#8212; denomination wise</div>
+        <div id="open-denoms"></div>
+        <div class="total-row">
+          <span class="total-label">Total opening cash</span>
+          <span class="total-val" id="opening-total">&#8377;0</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Opening notes</div>
+        <textarea id="opening-notes" placeholder="Any notes for the day..."></textarea>
+      </div>
+      <button class="btn-save" id="btn-save-opening">Save opening</button>
+    </div>
+
+    <!-- EXPENSES -->
+    <div class="section" id="section-expenses">
+      <div class="card">
+        <div class="card-title">Expense entries</div>
+        <div class="exp-list" id="exp-list"></div>
+        <button class="btn-add" id="btn-add-expense">+ Add expense</button>
+      </div>
+      <div class="card">
+        <div class="total-row" style="margin-top:0;padding-top:0;border-top:none">
+          <span class="total-label">Total expenses today</span>
+          <span class="total-val" id="exp-total">&#8377;0</span>
+        </div>
+      </div>
+      <button class="btn-save" id="btn-save-expenses">Save expenses</button>
+    </div>
+
+    <!-- CLOSING -->
+    <div class="section" id="section-closing">
+      <div class="card">
+        <div class="card-title">Sales entry</div>
+        <div class="sales-row"><label>Cash sales (&#8377;)</label><input type="number" id="cash-sales" placeholder="0" inputmode="numeric" oninput="calcClosing()"></div>
+        <div class="sales-row"><label>UPI / Card (&#8377;)</label><input type="number" id="digital-sales" placeholder="0" inputmode="numeric" oninput="calcClosing()"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Closing cash count</div>
+        <div id="close-denoms"></div>
+        <div class="total-row">
+          <span class="total-label">Total closing cash</span>
+          <span class="total-val" id="closing-total">&#8377;0</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Reconciliation</div>
+        <div class="recon-row"><span class="recon-lbl">Opening cash</span><span class="recon-val" id="r-open">&#8377;0</span></div>
+        <div class="recon-row"><span class="recon-lbl">+ Cash sales</span><span class="recon-val" id="r-cashsales">&#8377;0</span></div>
+        <div class="recon-row"><span class="recon-lbl">&#8722; Expenses</span><span class="recon-val" id="r-expenses">&#8377;0</span></div>
+        <div class="recon-row"><span class="recon-lbl">= Expected closing</span><span class="recon-val" id="r-expected">&#8377;0</span></div>
+        <div class="recon-row"><span class="recon-lbl">Actual closing cash</span><span class="recon-val" id="r-actual">&#8377;0</span></div>
+        <div class="diff-bar"><span class="diff-label">Difference</span><span class="diff-val" id="r-diff">&#8212;</span></div>
+      </div>
+      <button class="btn-save" id="btn-save-closing">Save &amp; close day</button>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="section" id="section-summary">
+      <div class="metrics">
+        <div class="metric"><div class="metric-lbl">Total sales</div><div class="metric-val amber" id="s-sales">&#8377;0</div></div>
+        <div class="metric"><div class="metric-lbl">Expenses</div><div class="metric-val" id="s-expenses">&#8377;0</div></div>
+        <div class="metric"><div class="metric-lbl">Cash diff</div><div class="metric-val" id="s-diff">&#8377;0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cash flow</div>
+        <div class="sum-row"><span class="sl">Opening cash</span><span class="sv" id="ss-open">&#8377;0</span></div>
+        <div class="sum-row"><span class="sl">Cash sales</span><span class="sv" id="ss-cash">&#8377;0</span></div>
+        <div class="sum-row"><span class="sl">UPI / Card</span><span class="sv" id="ss-digital">&#8377;0</span></div>
+        <div class="sum-row"><span class="sl">Expenses paid</span><span class="sv" id="ss-exp">&#8377;0</span></div>
+        <div class="sum-row strong"><span class="sl">Closing cash</span><span class="sv" id="ss-close">&#8377;0</span></div>
+      </div>
+      <div class="card"><div class="card-title">By category</div><div id="sum-cats"></div></div>
+      <div class="card"><div class="card-title">Notes</div><div id="ss-notes" style="font-size:.82rem;font-family:var(--mono);color:var(--muted)">&#8212;</div></div>
+      <button class="btn-save" id="btn-print" style="background:transparent;border:.5px solid var(--border2);color:var(--text);margin-top:.25rem">Print / Save summary</button>
+    </div>
+
+    <!-- MONTHLY -->
+    <div class="section" id="section-monthly">
+      <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
+        <div class="metric"><div class="metric-lbl">Month sales</div><div class="metric-val amber" id="m-sales">&#8212;</div></div>
+        <div class="metric"><div class="metric-lbl">Month exp</div><div class="metric-val" id="m-exp">&#8212;</div></div>
+        <div class="metric"><div class="metric-lbl">Net</div><div class="metric-val green" id="m-net">&#8212;</div></div>
+        <div class="metric"><div class="metric-lbl">Days</div><div class="metric-val" id="m-days">&#8212;</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Sales &#8212; last 14 days</div>
+        <div class="chart-bar-wrap" id="monthly-bars"></div>
+        <div class="chart-labels" id="monthly-labels"></div>
+      </div>
+      <div class="card"><div class="card-title">This month</div><div id="monthly-list"></div></div>
+      <div class="spinner" id="monthly-spinner" style="display:none"></div>
+    </div>
+
+    <!-- LEDGER -->
+    <div class="section" id="section-customers">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+        <span class="sec-heading" style="margin:0">Customer ledger</span>
+        <button class="btn-outline" id="btn-add-customer" style="font-size:.75rem;padding:6px 12px">+ Add</button>
+      </div>
+      <div class="spinner" id="cust-spinner" style="display:none"></div>
+      <div id="customer-list"></div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="section" id="section-staff">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+        <span class="sec-heading" style="margin:0">Staff</span>
+        <button class="btn-outline" id="btn-add-staff" style="font-size:.75rem;padding:6px 12px">+ Add</button>
+      </div>
+      <div class="spinner" id="staff-spinner" style="display:none"></div>
+      <div class="card"><div id="staff-list"></div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="section" id="section-settings">
+      <div class="card">
+        <div class="card-title">Notifications</div>
+        <div class="setting-row"><label>EOD reminder time</label><input type="time" id="eod-time" value="20:00"></div>
+        <div class="setting-row"><label>Low cash alert (&#8377;)</label><input type="number" id="low-cash" value="500"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">App</div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.0.3</span></div>
+        <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
+      </div>
+      <button class="btn-save" id="btn-save-settings">Save settings</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-backdrop" id="modal-user">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-title">Account <button class="modal-close">&#x2715;</button></div>
+    <div style="font-size:.95rem;font-weight:600;margin-bottom:4px" id="modal-user-name"></div>
+    <div style="font-size:.78rem;font-family:var(--mono);color:var(--muted);margin-bottom:1.25rem" id="modal-user-email"></div>
+    <button class="btn-save" id="btn-logout" style="background:transparent;border:.5px solid var(--border2);color:var(--text)">Sign out</button>
+  </div>
+</div>
+<div class="modal-backdrop" id="modal-add-customer">
+  <div class="modal">
+    <div class="modal-title">Add customer <button class="modal-close">&#x2715;</button></div>
+    <label>Name</label><input id="c-name" placeholder="Customer name">
+    <label>Phone</label><input id="c-phone" placeholder="9876543210" inputmode="tel">
+    <label>Notes</label><input id="c-notes" placeholder="Any notes">
+    <button class="btn-save" id="btn-save-customer">Save</button>
+  </div>
+</div>
+<div class="modal-backdrop" id="modal-ledger">
+  <div class="modal">
+    <div class="modal-title">
+      <div><div id="lc-name" style="font-size:.95rem"></div><div id="lc-phone" style="font-size:.72rem;font-family:var(--mono);color:var(--muted)"></div></div>
+      <button class="modal-close">&#x2715;</button>
+    </div>
+    <div style="margin-bottom:1rem"><div class="metric-lbl">Balance</div><div class="metric-val" id="lc-bal">&#8377;0</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+      <span class="sec-heading" style="margin:0">Entries</span>
+      <button class="btn-outline" id="btn-add-entry" style="font-size:.72rem;padding:5px 10px">+ Entry</button>
+    </div>
+    <div id="ledger-entries"></div>
+  </div>
+</div>
+<div class="modal-backdrop" id="modal-add-entry">
+  <div class="modal">
+    <div class="modal-title">Add entry <button class="modal-close">&#x2715;</button></div>
+    <label>Type</label>
+    <select id="e-type"><option value="credit">Credit (they owe you)</option><option value="debit">Debit (paid back)</option></select>
+    <label>Description</label><input id="e-desc" placeholder="e.g. Sold shoes on credit">
+    <label>Amount (&#8377;)</label><input id="e-amount" type="number" placeholder="0" inputmode="numeric">
+    <button class="btn-save" id="btn-save-entry">Save entry</button>
+  </div>
+</div>
+<div class="modal-backdrop" id="modal-add-staff">
+  <div class="modal">
+    <div class="modal-title">Staff member <button class="modal-close">&#x2715;</button></div>
+    <input type="hidden" id="s-id">
+    <label>Name</label><input id="s-name" placeholder="Full name">
+    <label>Email</label><input id="s-email" placeholder="email@example.com" type="email">
+    <label>Role</label>
+    <select id="s-role">
+      <option value="staff">Staff (register only)</option>
+      <option value="manager">Manager (reports + closing)</option>
+      <option value="owner">Owner (full access)</option>
+    </select>
+    <button class="btn-save" id="btn-save-staff">Save</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// FIREBASE CONFIG
+// ════════════════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:            "AIzaSyBs4Wk_OgA5W96ORTkWLzKo-lVJiVfryho",
+  authDomain:        "sr-shoes-hisab.firebaseapp.com",
+  projectId:         "sr-shoes-hisab",
+  storageBucket:     "sr-shoes-hisab.firebasestorage.app",
+  messagingSenderId: "1057302500600",
+  appId:             "1:1057302500600:web:4b58a2db6e5751c978970d"
+});
+const VAPID = "BM9-eN4gn1RGV2gk7_6_QHjjULyyTp2AR-SD5cX7BdqmHhnlxUd9TqSNZMyxABXEK-DH0dTnaZl_xo3QzCyUTSg";
+const auth = firebase.auth();
+const db   = firebase.firestore();
+let   msg  = null;
+try { msg = firebase.messaging(); } catch(e) {}
+
+// ════════════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════════════
+const NOTES    = [500, 200, 100, 50, 20, 10];
+const COINS    = [20, 10, 5, 2, 1];
+const EXP_CATS = ['Rent','Electricity','Staff wages','Packaging','Transport','Repairs','Miscellaneous','Other'];
+const STORE_ID = 'sr-shoes-main'; // shared store — all staff see same data
+
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let S = {
+  user: null,
+  today: '',
+  rec: null,       // today's register record
+  expenses: [],
+  expId: 0,
+  settings: { eodTime: '20:00', lowCashAlert: 500 },
+  customers: [],
+  staff: []
+};
+
+// ════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════
+const fmt  = n => '&#8377;' + Math.round(n||0).toLocaleString('en-IN');
+const fmtN = n => '₹' + Math.round(n||0).toLocaleString('en-IN');
+const ini  = n => (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+function dateKey(d) {
+  const dt = d || new Date();
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+function showToast(msg, ms=2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModals()  { document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open')); }
+
+function saveBtnState(btn, state, label) {
+  if (state === 'saving') { btn.disabled = true; btn.textContent = 'Saving…'; }
+  if (state === 'saved')  { btn.textContent = 'Saved ✓'; btn.classList.add('saved'); setTimeout(() => { btn.textContent = label; btn.classList.remove('saved'); btn.disabled = false; }, 2000); }
+  if (state === 'error')  { btn.disabled = false; btn.textContent = label; }
+}
+
+// ════════════════════════════════════════════════════
+// DENOMINATION GRID
+// ════════════════════════════════════════════════════
+function buildDenoms(containerId, onInput) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+
+  // Notes
+  const nl = document.createElement('div');
+  nl.className = 'denom-section-label';
+  nl.textContent = 'Notes';
+  el.appendChild(nl);
+
+  const ng = document.createElement('div');
+  ng.className = 'denom-grid';
+  NOTES.forEach(d => {
+    ng.appendChild(makeDenomRow(d, containerId + '-n-' + d, onInput, false));
+  });
+  el.appendChild(ng);
+
+  // Coins
+  const cl = document.createElement('div');
+  cl.className = 'denom-section-label';
+  cl.textContent = 'Coins';
+  el.appendChild(cl);
+
+  const cg = document.createElement('div');
+  cg.className = 'denom-grid';
+  COINS.forEach(d => {
+    cg.appendChild(makeDenomRow(d, containerId + '-c-' + d, onInput, true));
+  });
+  el.appendChild(cg);
+}
+
+function makeDenomRow(val, id, onInput, isCoin) {
+  const row = document.createElement('div');
+  row.className = 'denom-row' + (isCoin ? ' coin' : '');
+  row.innerHTML = `
+    <span class="denom-label">${isCoin ? '&#8377;'+val+'c' : '&#8377;'+val}</span>
+    <input type="number" min="0" id="${id}" placeholder="0" inputmode="numeric">
+    <span class="denom-sub" id="${id}-sub"></span>`;
+  row.querySelector('input').addEventListener('input', function() {
+    const v = parseInt(this.value) || 0;
+    const sub = document.getElementById(id + '-sub');
+    sub.textContent = v > 0 ? fmtN(v * val) : '';
+    onInput();
+  });
+  return row;
+}
+
+function getDenomTotal(prefix) {
+  let t = 0;
+  NOTES.forEach(d => { t += (parseInt(document.getElementById(prefix+'-n-'+d)?.value)||0) * d; });
+  COINS.forEach(d => { t += (parseInt(document.getElementById(prefix+'-c-'+d)?.value)||0) * d; });
+  return t;
+}
+
+function getDenomCounts(prefix) {
+  const c = {};
+  NOTES.forEach(d => { const v=parseInt(document.getElementById(prefix+'-n-'+d)?.value)||0; if(v) c['n'+d]=v; });
+  COINS.forEach(d => { const v=parseInt(document.getElementById(prefix+'-c-'+d)?.value)||0; if(v) c['c'+d]=v; });
+  return c;
+}
+
+function setDenomCounts(prefix, counts) {
+  if (!counts) return;
+  NOTES.forEach(d => { const el=document.getElementById(prefix+'-n-'+d); if(el&&counts['n'+d]) el.value=counts['n'+d]; });
+  COINS.forEach(d => { const el=document.getElementById(prefix+'-c-'+d); if(el&&counts['c'+d]) el.value=counts['c'+d]; });
+}
+
+// ════════════════════════════════════════════════════
+// FIREBASE HELPERS
+// ════════════════════════════════════════════════════
+function regRef(date) {
+  return db.collection('registers').doc(STORE_ID + '_' + date);
+}
+
+async function loadRec(date) {
+  const snap = await regRef(date).get();
+  return snap.exists ? snap.data() : null;
+}
+
+async function saveRec(data) {
+  await regRef(data.date).set({ ...data, storeId: STORE_ID, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+}
+
+async function loadRange(from, to) {
+  const snap = await db.collection('registers')
+    .where('storeId', '==', STORE_ID)
+    .where('date', '>=', from)
+    .where('date', '<=', to)
+    .orderBy('date', 'desc').get();
+  return snap.docs.map(d => d.data());
+}
+
+// ════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    S.user = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').classList.add('visible');
+    await boot();
+  } else {
+    S.user = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').classList.remove('visible');
+  }
+});
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('auth-error');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Enter email and password.'; return; }
+  try { await auth.signInWithEmailAndPassword(email, pass); }
+  catch(e) { err.textContent = e.message.replace('Firebase:','').replace(/\(.*\)/,'').trim(); }
+}
+
+document.getElementById('btn-login').addEventListener('click', doLogin);
+document.getElementById('login-email').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
+document.getElementById('login-pass').addEventListener('keydown',  e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('topbar-user').addEventListener('click', () => openModal('modal-user'));
+document.getElementById('btn-logout').addEventListener('click', async () => { await auth.signOut(); closeModals(); });
+
+// ════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════
+async function boot() {
+  const u = S.user;
+  document.getElementById('topbar-user').textContent = ini(u.displayName || u.email);
+  document.getElementById('modal-user-name').textContent  = u.displayName || u.email;
+  document.getElementById('modal-user-email').textContent = u.email;
+  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-IN', { weekday:'short', day:'2-digit', month:'short' });
+
+  S.today = dateKey();
+
+  // Load settings
+  try {
+    const snap = await db.collection('settings').doc(STORE_ID).get();
+    if (snap.exists) S.settings = snap.data();
+  } catch(e) {}
+
+  // Load today's record
+  try {
+    const rec = await loadRec(S.today);
+    if (rec) {
+      S.rec      = rec;
+      S.expenses = rec.expenses || [];
+      S.expId    = S.expenses.length;
+    }
+  } catch(e) { console.warn('Load error:', e); }
+
+  // Build UI
+  buildDenoms('open-denoms', calcOpening);
+  buildDenoms('close-denoms', calcClosing);
+
+  if (S.rec?.openingCounts) { setDenomCounts('open-denoms', S.rec.openingCounts); calcOpening(); }
+  if (S.rec?.closingCounts) { setDenomCounts('close-denoms', S.rec.closingCounts); }
+  if (S.rec?.cashSales != null)    document.getElementById('cash-sales').value    = S.rec.cashSales;
+  if (S.rec?.digitalSales != null) document.getElementById('digital-sales').value = S.rec.digitalSales;
+  if (S.rec?.openingNotes) document.getElementById('opening-notes').value = S.rec.openingNotes;
+
+  renderExpenses();
+  calcClosing();
+  updateSummary();
+
+  // Carry-forward banner
+  const prev = S.rec?.expectedOpening;
+  if (prev != null) {
+    document.getElementById('carry-expected-val').innerHTML = fmt(prev);
+    document.getElementById('carry-banner').style.display = 'flex';
+    calcOpening();
+  }
+
+  // Notifications
+  if ('Notification' in window && Notification.permission === 'default') {
+    document.getElementById('notif-bar').classList.add('show');
+  }
+  scheduleEOD();
+}
+
+// ════════════════════════════════════════════════════
+// TAB SWITCHING
+// ════════════════════════════════════════════════════
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('section-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'summary')   updateSummary();
+    if (tab.dataset.tab === 'monthly')   loadMonthly();
+    if (tab.dataset.tab === 'customers') loadCustomers();
+    if (tab.dataset.tab === 'staff')     loadStaff();
+  });
+});
+
+// ════════════════════════════════════════════════════
+// OPENING
+// ════════════════════════════════════════════════════
+function calcOpening() {
+  const total = getDenomTotal('open-denoms');
+  document.getElementById('opening-total').innerHTML = fmt(total);
+  const prev  = S.rec?.expectedOpening;
+  const badge = document.getElementById('carry-badge');
+  const mr    = document.getElementById('mismatch-row');
+  if (prev != null && total > 0) {
+    const diff = total - prev;
+    if (Math.abs(diff) < 1) { badge.textContent = 'Match ✓'; badge.className = 'carry-badge match'; }
+    else { badge.textContent = diff > 0 ? 'Over ' + fmtN(diff) : 'Short ' + fmtN(Math.abs(diff)); badge.className = 'carry-badge mismatch'; }
+    mr.style.display = Math.abs(diff) >= 1 ? 'block' : 'none';
+  } else {
+    badge.textContent = 'Pending'; badge.className = 'carry-badge pending';
+    mr.style.display = 'none';
+  }
+}
+
+document.getElementById('btn-save-opening').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-save-opening');
+  saveBtnState(btn, 'saving');
+  try {
+    const data = {
+      date: S.today,
+      openingCash: getDenomTotal('open-denoms'),
+      openingCounts: getDenomCounts('open-denoms'),
+      openingNotes: document.getElementById('opening-notes').value.trim(),
+      openingTime: new Date().toISOString(),
+      mismatchReason: document.getElementById('mismatch-reason')?.value.trim() || null
+    };
+    await saveRec(data);
+    S.rec = { ...S.rec, ...data };
+    saveBtnState(btn, 'saved', 'Save opening');
+    showToast('Opening saved');
+  } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save opening'); }
+});
+
+// ════════════════════════════════════════════════════
+// EXPENSES
+// ════════════════════════════════════════════════════
+function renderExpenses() {
+  const list = document.getElementById('exp-list');
+  list.innerHTML = '';
+  S.expenses.forEach(exp => {
+    const row = document.createElement('div');
+    row.className = 'exp-row';
+    row.innerHTML = `
+      <input placeholder="Description" value="${exp.desc||''}" oninput="updExp(${exp.id},'desc',this.value)">
+      <select onchange="updExp(${exp.id},'cat',this.value)">${EXP_CATS.map(c=>`<option${exp.cat===c?' selected':''}>${c}</option>`).join('')}</select>
+      <input type="number" placeholder="0" value="${exp.amt||''}" oninput="updExp(${exp.id},'amt',this.value)" inputmode="numeric">
+      <button class="exp-del" onclick="delExp(${exp.id})">&#x2715;</button>`;
+    list.appendChild(row);
+  });
+  updExpTotal();
+}
+
+function updExpTotal() {
+  const t = S.expenses.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
+  document.getElementById('exp-total').innerHTML = fmt(t);
+  return t;
+}
+
+window.updExp = (id,f,v) => { const e=S.expenses.find(x=>x.id===id); if(e) e[f]=v; updExpTotal(); calcClosing(); };
+window.delExp = id => { S.expenses = S.expenses.filter(x=>x.id!==id); renderExpenses(); calcClosing(); };
+
+document.getElementById('btn-add-expense').addEventListener('click', () => {
+  S.expenses.push({ id: S.expId++, desc:'', cat: EXP_CATS[7], amt:'' });
+  renderExpenses();
+});
+
+document.getElementById('btn-save-expenses').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-save-expenses');
+  saveBtnState(btn, 'saving');
+  try {
+    await saveRec({ date: S.today, expenses: S.expenses });
+    saveBtnState(btn, 'saved', 'Save expenses');
+    showToast('Expenses saved');
+  } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save expenses'); }
+});
+
+// ════════════════════════════════════════════════════
+// CLOSING
+// ════════════════════════════════════════════════════
+function calcClosing() {
+  const close    = getDenomTotal('close-denoms');
+  const cashSale = parseFloat(document.getElementById('cash-sales').value)||0;
+  const expTotal = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const openCash = S.rec?.openingCash || getDenomTotal('open-denoms');
+  const expected = openCash + cashSale - expTotal;
+  const diff     = close - expected;
+
+  document.getElementById('closing-total').innerHTML = fmt(close);
+  document.getElementById('r-open').innerHTML        = fmt(openCash);
+  document.getElementById('r-cashsales').innerHTML   = fmt(cashSale);
+  document.getElementById('r-expenses').innerHTML    = fmt(expTotal);
+  document.getElementById('r-expected').innerHTML    = fmt(expected);
+  document.getElementById('r-actual').innerHTML      = fmt(close);
+
+  const dv = document.getElementById('r-diff');
+  if (Math.abs(diff)<1)     { dv.innerHTML='&#8377;0 &#8212; Balanced'; dv.className='diff-val balanced'; }
+  else if (diff>0)           { dv.innerHTML=fmt(diff)+' over';           dv.className='diff-val over'; }
+  else                       { dv.innerHTML=fmt(Math.abs(diff))+' short'; dv.className='diff-val short'; }
+}
+
+document.getElementById('btn-save-closing').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-save-closing');
+  saveBtnState(btn, 'saving');
+  try {
+    const closeCash  = getDenomTotal('close-denoms');
+    const cashSales  = parseFloat(document.getElementById('cash-sales').value)||0;
+    const digital    = parseFloat(document.getElementById('digital-sales').value)||0;
+    const expTotal   = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+    const openCash   = S.rec?.openingCash || 0;
+    const data = {
+      date: S.today,
+      closingCash: closeCash,
+      closingCounts: getDenomCounts('close-denoms'),
+      cashSales, digitalSales: digital,
+      totalSales: cashSales + digital,
+      expenseTotal: expTotal,
+      closingTime: new Date().toISOString(),
+      expectedOpening: closeCash  // carry forward to next day
+    };
+    await saveRec(data);
+    // Set tomorrow's expected opening
+    const tomorrow = dateKey(new Date(Date.now() + 86400000));
+    await saveRec({ date: tomorrow, expectedOpening: closeCash });
+    S.rec = { ...S.rec, ...data };
+    saveBtnState(btn, 'saved', 'Save & close day');
+    showToast('Day closed — ' + fmtN(closeCash) + ' carried forward');
+  } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save & close day'); }
+});
+
+// ════════════════════════════════════════════════════
+// SUMMARY
+// ════════════════════════════════════════════════════
+function updateSummary() {
+  const open    = S.rec?.openingCash || 0;
+  const cash    = S.rec?.cashSales    || parseFloat(document.getElementById('cash-sales')?.value)||0;
+  const digital = S.rec?.digitalSales || parseFloat(document.getElementById('digital-sales')?.value)||0;
+  const exp     = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const close   = S.rec?.closingCash  || getDenomTotal('close-denoms');
+  const diff    = close - (open + cash - exp);
+
+  document.getElementById('s-sales').innerHTML    = fmt(cash+digital);
+  document.getElementById('s-expenses').innerHTML = fmt(exp);
+  const sd = document.getElementById('s-diff');
+  sd.innerHTML = (diff>=0?'+':'') + fmtN(diff);
+  sd.className = 'metric-val ' + (Math.abs(diff)<1?'green':diff<0?'red':'amber');
+
+  document.getElementById('ss-open').innerHTML    = fmt(open);
+  document.getElementById('ss-cash').innerHTML    = fmt(cash);
+  document.getElementById('ss-digital').innerHTML = fmt(digital);
+  document.getElementById('ss-exp').innerHTML     = fmt(exp);
+  document.getElementById('ss-close').innerHTML   = fmt(close);
+
+  const cats = {};
+  S.expenses.forEach(e => { if(e.amt) cats[e.cat]=(cats[e.cat]||0)+(parseFloat(e.amt)||0); });
+  document.getElementById('sum-cats').innerHTML = Object.keys(cats).length
+    ? Object.entries(cats).map(([c,v])=>`<div class="sum-row"><span class="sl">${c}</span><span class="sv">${fmtN(v)}</span></div>`).join('')
+    : '<div class="sum-row"><span class="sl" style="opacity:.5">No expenses</span></div>';
+
+  document.getElementById('ss-notes').textContent = S.rec?.openingNotes || '—';
+}
+
+document.getElementById('btn-print').addEventListener('click', () => {
+  const open=S.rec?.openingCash||0, cash=S.rec?.cashSales||0, digital=S.rec?.digitalSales||0;
+  const exp=S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0), close=S.rec?.closingCash||0;
+  let txt=`SR SHOES — DAILY HISAB\nDate: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}\n${'─'.repeat(34)}\n`;
+  txt+=`Opening cash  : ${fmtN(open)}\nCash sales    : ${fmtN(cash)}\nUPI/Card      : ${fmtN(digital)}\nTotal sales   : ${fmtN(cash+digital)}\nExpenses      : ${fmtN(exp)}\nClosing cash  : ${fmtN(close)}\n${'─'.repeat(34)}\n`;
+  if(S.expenses.length){txt+='\nExpenses:\n';S.expenses.forEach(e=>{if(e.amt)txt+=`  ${(e.cat||'').padEnd(14)} ${fmtN(e.amt)}\n`;});}
+  if(S.rec?.openingNotes)txt+=`\nNotes: ${S.rec.openingNotes}`;
+  const w=window.open('','_blank');
+  if(w){w.document.write(`<pre style="font-family:monospace;font-size:13px;padding:2rem">${txt}</pre>`);w.print();}
+});
+
+// ════════════════════════════════════════════════════
+// MONTHLY
+// ════════════════════════════════════════════════════
+async function loadMonthly() {
+  document.getElementById('monthly-spinner').style.display = 'block';
+  const now = new Date();
+  const from = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  const to   = dateKey();
+  try {
+    const recs = await loadRange(from, to);
+    document.getElementById('monthly-spinner').style.display = 'none';
+    let ts=0,te=0,td=0; const byday={};
+    recs.forEach(r => { if(!r.closingCash) return; ts+=r.totalSales||0; te+=r.expenseTotal||0; td++; byday[r.date]=r; });
+    document.getElementById('m-sales').innerHTML = fmt(ts);
+    document.getElementById('m-exp').innerHTML   = fmt(te);
+    document.getElementById('m-net').innerHTML   = fmt(ts-te);
+    document.getElementById('m-days').textContent= td;
+
+    const days=[]; for(let i=13;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);days.push(dateKey(dt));}
+    const vals=days.map(d=>byday[d]?.totalSales||0), maxV=Math.max(...vals,1);
+    document.getElementById('monthly-bars').innerHTML = vals.map((v,i)=>
+      `<div class="chart-bar" style="height:${Math.max(4,Math.round(v/maxV*76))}px" title="${days[i]}: ${fmtN(v)}"></div>`).join('');
+    document.getElementById('monthly-labels').innerHTML = days.map((d,i)=>
+      `<span>${i%2===0?d.slice(8):''}</span>`).join('');
+    document.getElementById('monthly-list').innerHTML = recs.filter(r=>r.closingCash).map(r=>
+      `<div class="sum-row"><span class="sl">${r.date}</span><span class="sv">${fmtN(r.totalSales||0)}</span><span style="color:var(--muted);font-family:var(--mono);font-size:.75rem;margin-left:8px">exp ${fmtN(r.expenseTotal||0)}</span></div>`
+    ).join('') || '<div class="sum-row"><span class="sl" style="opacity:.5">No records yet</span></div>';
+  } catch(e) {
+    document.getElementById('monthly-spinner').style.display = 'none';
+    showToast('Error loading monthly: ' + e.message);
+  }
+}
+
+// ════════════════════════════════════════════════════
+// CUSTOMERS / LEDGER
+// ════════════════════════════════════════════════════
+async function loadCustomers() {
+  document.getElementById('cust-spinner').style.display = 'block';
+  try {
+    const snap = await db.collection('customers').where('storeId','==',STORE_ID).orderBy('name').get();
+    S.customers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { S.customers = []; }
+  document.getElementById('cust-spinner').style.display = 'none';
+  const el = document.getElementById('customer-list');
+  el.innerHTML = S.customers.length ? S.customers.map(c => {
+    const bal=c.balance||0, bc=bal>0?'cr':bal<0?'dr':'zero', bl=(bal>0?'+':'')+fmtN(bal);
+    return `<div class="customer-item" onclick="openLedger('${c.id}')">
+      <div class="avatar">${ini(c.name)}</div>
+      <div><div class="customer-name">${c.name}</div><div class="customer-phone">${c.phone||'—'}</div></div>
+      <div class="customer-bal ${bc}">${bl}</div></div>`;
+  }).join('') : '<div style="font-size:.8rem;color:var(--muted);font-family:var(--mono);padding:10px 0">No customers yet</div>';
+}
+
+window.openLedger = async id => {
+  const c = S.customers.find(x => x.id===id); if(!c) return;
+  document.getElementById('lc-name').textContent  = c.name;
+  document.getElementById('lc-phone').textContent = c.phone||'';
+  const bal=c.balance||0;
+  document.getElementById('lc-bal').innerHTML = (bal>=0?'+':'')+fmt(bal);
+  document.getElementById('lc-bal').className = 'metric-val '+(bal>0?'green':bal<0?'red':'');
+  document.getElementById('ledger-entries').innerHTML = '<div class="spinner"></div>';
+  document.getElementById('modal-ledger').dataset.custId = id;
+  openModal('modal-ledger');
+  const snap = await db.collection('customers').doc(id).collection('ledger').orderBy('createdAt','desc').limit(50).get();
+  const entries = snap.docs.map(d=>({id:d.id,...d.data()}));
+  document.getElementById('ledger-entries').innerHTML = entries.length ? entries.map(e => {
+    const ic=e.type==='credit', dt=e.createdAt?.toDate?e.createdAt.toDate():new Date();
+    return `<div class="ledger-entry">
+      <div><div>${e.desc||'—'}</div><div class="le-date">${dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div></div>
+      <div class="le-amt ${ic?'cr':'dr'}">${ic?'+':'-'}${fmtN(e.amount)}</div></div>`;
+  }).join('') : '<div style="font-size:.8rem;color:var(--muted);padding:10px 0">No entries</div>';
+};
+
+document.getElementById('btn-add-customer').addEventListener('click', () => {
+  ['c-name','c-phone','c-notes'].forEach(id => document.getElementById(id).value='');
+  openModal('modal-add-customer');
+});
+document.getElementById('btn-save-customer').addEventListener('click', async () => {
+  const name=document.getElementById('c-name').value.trim();
+  if(!name){showToast('Enter name');return;}
+  await db.collection('customers').doc().set({ name, phone:document.getElementById('c-phone').value.trim(), notes:document.getElementById('c-notes').value.trim(), balance:0, storeId:STORE_ID, createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+  closeModals(); showToast('Customer added'); loadCustomers();
+});
+
+document.getElementById('btn-add-entry').addEventListener('click', () => {
+  ['e-desc','e-amount'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('e-type').value='credit';
+  openModal('modal-add-entry');
+});
+document.getElementById('btn-save-entry').addEventListener('click', async () => {
+  const cid=document.getElementById('modal-ledger').dataset.custId;
+  const desc=document.getElementById('e-desc').value.trim();
+  const amount=parseFloat(document.getElementById('e-amount').value)||0;
+  const type=document.getElementById('e-type').value;
+  if(!amount){showToast('Enter amount');return;}
+  await db.collection('customers').doc(cid).collection('ledger').add({ desc, amount, type, storeId:STORE_ID, createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+  const bal = type==='credit' ? amount : -amount;
+  await db.collection('customers').doc(cid).update({ balance: firebase.firestore.FieldValue.increment(bal) });
+  closeModals(); showToast('Entry added'); loadCustomers();
+});
+
+// ════════════════════════════════════════════════════
+// STAFF
+// ════════════════════════════════════════════════════
+async function loadStaff() {
+  document.getElementById('staff-spinner').style.display = 'block';
+  try {
+    const snap = await db.collection('staff').where('storeId','==',STORE_ID).get();
+    S.staff = snap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e) { S.staff = []; }
+  document.getElementById('staff-spinner').style.display = 'none';
+  document.getElementById('staff-list').innerHTML = S.staff.length ? S.staff.map(s=>
+    `<div class="staff-item">
+      <div class="avatar">${ini(s.name)}</div>
+      <div><div style="font-size:.88rem;font-weight:600">${s.name}</div><div style="font-size:.72rem;font-family:var(--mono);color:var(--muted)">${s.email||''}</div></div>
+      <span class="role-badge role-${s.role||'staff'}">${s.role||'staff'}</span>
+      <button class="btn-outline" style="padding:4px 10px;font-size:.68rem;margin-left:8px" onclick="editStaff('${s.id}')">Edit</button>
+    </div>`).join('')
+    : '<div style="font-size:.8rem;color:var(--muted);font-family:var(--mono);padding:10px 0">No staff added</div>';
+}
+
+document.getElementById('btn-add-staff').addEventListener('click', () => {
+  ['s-id','s-name','s-email'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('s-role').value='staff';
+  openModal('modal-add-staff');
+});
+window.editStaff = id => {
+  const s=S.staff.find(x=>x.id===id); if(!s) return;
+  document.getElementById('s-id').value    = s.id;
+  document.getElementById('s-name').value  = s.name;
+  document.getElementById('s-email').value = s.email||'';
+  document.getElementById('s-role').value  = s.role||'staff';
+  openModal('modal-add-staff');
+};
+document.getElementById('btn-save-staff').addEventListener('click', async () => {
+  const id=document.getElementById('s-id').value;
+  const name=document.getElementById('s-name').value.trim();
+  if(!name){showToast('Enter name');return;}
+  const ref = id ? db.collection('staff').doc(id) : db.collection('staff').doc();
+  await ref.set({ name, email:document.getElementById('s-email').value.trim(), role:document.getElementById('s-role').value, storeId:STORE_ID }, {merge:true});
+  closeModals(); showToast('Staff saved'); loadStaff();
+});
+
+// ════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════
+document.getElementById('btn-save-settings').addEventListener('click', async () => {
+  S.settings = { eodTime: document.getElementById('eod-time').value, lowCashAlert: parseFloat(document.getElementById('low-cash').value)||500 };
+  await db.collection('settings').doc(STORE_ID).set(S.settings, {merge:true});
+  showToast('Settings saved'); scheduleEOD();
+});
+
+// ════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ════════════════════════════════════════════════════
+document.getElementById('btn-enable-notif').addEventListener('click', async () => {
+  const p = await Notification.requestPermission();
+  if (p==='granted') {
+    document.getElementById('notif-bar').classList.remove('show');
+    if (msg) { try { const t=await msg.getToken({vapidKey:VAPID}); if(t) await db.collection('settings').doc(STORE_ID).set({fcmToken:t},{merge:true}); } catch(e){} }
+    showToast('Notifications enabled');
+    scheduleEOD();
+  }
+});
+
+function scheduleEOD() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const [h,m] = (S.settings.eodTime||'20:00').split(':').map(Number);
+  const now=new Date(), fire=new Date();
+  fire.setHours(h,m,0,0);
+  if (fire<=now) fire.setDate(fire.getDate()+1);
+  clearTimeout(window._eodTimer);
+  window._eodTimer = setTimeout(() => {
+    if (!S.rec?.closingCash) new Notification('SR Shoes Hisab', { body:'Time to close the register!', icon:'/icon-192.png', tag:'eod' });
+    scheduleEOD();
+  }, fire-now);
+}
+
+// ════════════════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════════════════
+document.querySelectorAll('.modal-backdrop').forEach(b => b.addEventListener('click', e => { if(e.target===b) closeModals(); }));
+document.querySelectorAll('.modal-close').forEach(btn => btn.addEventListener('click', closeModals));
+
+// ════════════════════════════════════════════════════
+// PWA INSTALL
+// ════════════════════════════════════════════════════
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredInstall = e;
+  document.getElementById('btn-install').style.display = 'block';
+  document.getElementById('install-txt').style.display = 'none';
+});
+document.getElementById('btn-install').addEventListener('click', async () => {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  const {outcome} = await deferredInstall.userChoice;
+  if (outcome==='accepted') showToast('App installed!');
+  deferredInstall = null;
+  document.getElementById('btn-install').style.display = 'none';
+});
+
+// ════════════════════════════════════════════════════
+// SERVICE WORKER
+// ════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(() => console.log('SW registered'))
+    .catch(e => console.warn('SW:', e));
+}
+</script>
+</body>
+</html>
