@@ -413,7 +413,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span></div>
   <div class="auth-sub">hisab.srshoe.in</div>
-  <div class="auth-ver">v1.2.2</div>
+  <div class="auth-ver">v1.2.3</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -436,7 +436,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.2.2</div>
+    <div class="topbar-ver">v1.2.3</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
 
@@ -642,8 +642,27 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
               onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
           </div>
           <button class="btn-save" id="btn-save-closing">Save &amp; close day</button>
+          <div id="closing-locked-bar" style="display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:.75rem;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:var(--r);padding:10px 16px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:1rem;color:var(--green);">&#10003;</span>
+              <span style="font-family:var(--mono);font-size:.82rem;color:var(--green);font-weight:600;">Day closed and locked</span>
+            </div>
+            <button id="btn-edit-closing" class="btn-outline" style="display:none;font-size:.75rem;padding:5px 14px;color:var(--accent);border-color:var(--accent);">Edit closing</button>
+          </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Confirmation dialog -->
+    <div id="closing-confirm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;">
+      <div style="background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--rl);padding:1.75rem;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.15);">
+        <div style="font-size:1rem;font-weight:700;margin-bottom:.5rem;">Close the day?</div>
+        <div style="font-size:.82rem;font-family:var(--mono);color:var(--muted);margin-bottom:1.25rem;">Once saved, staff cannot edit the closing. Make sure all data is correct.</div>
+        <div style="display:flex;gap:10px;">
+          <button id="btn-confirm-close-cancel" class="btn-outline" style="flex:1;">Cancel</button>
+          <button id="btn-confirm-close-ok" class="btn-save" style="flex:1;margin-top:0;">Yes, close day</button>
+        </div>
       </div>
     </div>
 
@@ -654,17 +673,36 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="metric"><div class="metric-lbl">Expenses</div><div class="metric-val" id="s-expenses">&#8377;0</div></div>
         <div class="metric"><div class="metric-lbl">Cash diff</div><div class="metric-val" id="s-diff">&#8377;0</div></div>
       </div>
-      <div class="card">
-        <div class="card-title">Cash flow</div>
-        <div class="sum-row"><span class="sl">Opening cash</span><span class="sv" id="ss-open">&#8377;0</span></div>
-        <div class="sum-row"><span class="sl">Cash sales</span><span class="sv" id="ss-cash">&#8377;0</span></div>
-        <div class="sum-row"><span class="sl">UPI / Card</span><span class="sv" id="ss-digital">&#8377;0</span></div>
-        <div class="sum-row"><span class="sl">Expenses paid</span><span class="sv" id="ss-exp">&#8377;0</span></div>
-        <div class="sum-row strong"><span class="sl">Closing cash</span><span class="sv" id="ss-close">&#8377;0</span></div>
+      <div class="pc-two-col">
+        <div>
+          <div class="card">
+            <div class="card-title">Sales breakdown</div>
+            <div class="sum-row"><span class="sl">Total sales</span><span class="sv" id="s-sales-2">&#8377;0</span></div>
+            <div class="sum-row"><span class="sl">Phonepe (UPI)</span><span class="sv" id="ss-phonepe">&#8377;0</span></div>
+            <div class="sum-row"><span class="sl">Card / Swipe</span><span class="sv" id="ss-card">&#8377;0</span></div>
+            <div class="sum-row strong"><span class="sl">Cash sales (auto)</span><span class="sv" id="ss-cash">&#8377;0</span></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Cash flow</div>
+            <div class="sum-row"><span class="sl">Opening cash</span><span class="sv" id="ss-open">&#8377;0</span></div>
+            <div class="sum-row"><span class="sl">+ Cash sales</span><span class="sv" id="ss-digital">&#8377;0</span></div>
+            <div class="sum-row"><span class="sl">&#8722; Expenses</span><span class="sv" id="ss-exp">&#8377;0</span></div>
+            <div class="sum-row strong"><span class="sl">Closing cash</span><span class="sv" id="ss-close">&#8377;0</span></div>
+            <div class="sum-row"><span class="sl">&#8722; Taken home</span><span class="sv" id="ss-taken">&#8377;0</span></div>
+            <div class="sum-row strong"><span class="sl">Tomorrow's opening</span><span class="sv" id="ss-tomorrow">&#8377;0</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="card"><div class="card-title">Expenses by category</div><div id="sum-cats"></div></div>
+          <div class="card">
+            <div class="card-title">Details</div>
+            <div class="sum-row"><span class="sl">Opening notes</span><span class="sv" id="ss-notes" style="text-align:right;max-width:60%">&#8212;</span></div>
+            <div class="sum-row"><span class="sl">Counted by</span><span class="sv" id="ss-counted">&#8212;</span></div>
+            <div class="sum-row"><span class="sl">Closed by</span><span class="sv" id="ss-closed">&#8212;</span></div>
+          </div>
+          <button class="btn-save" id="btn-print" style="background:transparent;border:.5px solid var(--border2);color:var(--text);margin-top:.25rem">Print / Save summary</button>
+        </div>
       </div>
-      <div class="card"><div class="card-title">By category</div><div id="sum-cats"></div></div>
-      <div class="card"><div class="card-title">Notes</div><div id="ss-notes" style="font-size:.82rem;font-family:var(--mono);color:var(--muted)">&#8212;</div></div>
-      <button class="btn-save" id="btn-print" style="background:transparent;border:.5px solid var(--border2);color:var(--text);margin-top:.25rem">Print / Save summary</button>
     </div>
 
     <!-- MONTHLY -->
@@ -693,7 +731,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.2</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.3</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -716,7 +754,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.2.2 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-ver">v1.2.3 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
@@ -1041,6 +1079,10 @@ async function boot() {
   if (S.rec?.openingTime) {
     lockOpening();
   }
+  // Lock closing if already saved
+  if (S.rec?.closingTime) {
+    lockClosing();
+  }
 }
 
 async function loadRole() {
@@ -1279,6 +1321,35 @@ document.getElementById('exp-desc').addEventListener('keydown', e => { if (e.key
 // ════════════════════════════════════════════════════
 // CLOSING
 // ════════════════════════════════════════════════════
+function lockClosing() {
+  // Lock all closing inputs
+  ['total-sales','phonepe-sales','card-sales','taken-home','closed-by'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.readOnly = true; el.style.opacity = '0.6'; el.style.cursor = 'not-allowed'; }
+  });
+  document.querySelectorAll('#close-denoms input').forEach(el => {
+    el.readOnly = true; el.style.opacity = '0.6'; el.style.cursor = 'not-allowed';
+  });
+  document.getElementById('btn-save-closing').style.display = 'none';
+  document.getElementById('closing-locked-bar').style.display = 'flex';
+  const editBtn = document.getElementById('btn-edit-closing');
+  if (editBtn) editBtn.style.display = S.role === 'owner' ? 'block' : 'none';
+}
+
+function unlockClosing() {
+  ['total-sales','phonepe-sales','card-sales','taken-home','closed-by'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.readOnly = false; el.style.opacity = ''; el.style.cursor = ''; }
+  });
+  document.querySelectorAll('#close-denoms input').forEach(el => {
+    el.readOnly = false; el.style.opacity = ''; el.style.cursor = '';
+  });
+  document.getElementById('btn-save-closing').style.display = 'block';
+  document.getElementById('closing-locked-bar').style.display = 'none';
+  const editBtn = document.getElementById('btn-edit-closing');
+  if (editBtn) editBtn.style.display = 'none';
+}
+
 function calcClosing() {
   const close      = getDenomTotal('close-denoms');
   const totalSales = parseFloat(document.getElementById('total-sales')?.value)||0;
@@ -1311,7 +1382,19 @@ function calcClosing() {
   else                    { dv.innerHTML=fmt(Math.abs(diff))+' short'; dv.className='diff-val short'; }
 }
 
-document.getElementById('btn-save-closing').addEventListener('click', async () => {
+// Show confirmation dialog on save
+document.getElementById('btn-save-closing').addEventListener('click', () => {
+  document.getElementById('closing-confirm').style.display = 'flex';
+});
+
+// Cancel confirmation
+document.getElementById('btn-confirm-close-cancel').addEventListener('click', () => {
+  document.getElementById('closing-confirm').style.display = 'none';
+});
+
+// Confirm and save
+document.getElementById('btn-confirm-close-ok').addEventListener('click', async () => {
+  document.getElementById('closing-confirm').style.display = 'none';
   const btn = document.getElementById('btn-save-closing');
   saveBtnState(btn, 'saving');
   try {
@@ -1323,9 +1406,7 @@ document.getElementById('btn-save-closing').addEventListener('click', async () =
     const takenHome  = parseFloat(document.getElementById('taken-home').value)||0;
     const closedBy   = document.getElementById('closed-by').value.trim();
     const expTotal   = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
-    const openCash   = S.rec?.openingCash || 0;
     const tomorrowOpening = closeCash - takenHome;
-
     const data = {
       date: S.today,
       closingCash: closeCash,
@@ -1337,18 +1418,110 @@ document.getElementById('btn-save-closing').addEventListener('click', async () =
       expectedOpening: tomorrowOpening
     };
     await saveRec(data);
-    // Carry forward to tomorrow — minus taken home
     const tomorrowDate = dateKey(new Date(Date.now() + 86400000));
     await saveRec({ date: tomorrowDate, expectedOpening: tomorrowOpening });
     S.rec = { ...S.rec, ...data };
     saveBtnState(btn, 'saved', 'Save & close day');
     showToast('Day closed — ' + fmtN(tomorrowOpening) + ' carried forward to tomorrow');
+    lockClosing();
+    updateSummaryTab();
   } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save & close day'); }
+});
+
+// Edit closing button (owner only)
+const btnEditClosing = document.getElementById('btn-edit-closing');
+if (btnEditClosing) btnEditClosing.addEventListener('click', () => {
+  unlockClosing();
+  showToast('Closing unlocked — make your changes and save again');
 });
 
 // ════════════════════════════════════════════════════
 // SUMMARY
 // ════════════════════════════════════════════════════
+function updateSummaryTab() {
+  const open     = S.rec?.openingCash     || 0;
+  const total    = S.rec?.totalSales      || 0;
+  const phonepe  = S.rec?.phonepe         || 0;
+  const card     = S.rec?.cardSales       || 0;
+  const cash     = S.rec?.cashSales       || 0;
+  const exp      = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const close    = S.rec?.closingCash     || 0;
+  const taken    = S.rec?.takenHome       || 0;
+  const diff     = close - (open + cash - exp);
+
+  document.getElementById('s-sales').innerHTML    = fmt(total);
+  document.getElementById('s-expenses').innerHTML = fmt(exp);
+  const sd = document.getElementById('s-diff');
+  sd.innerHTML = (diff>=0?'+':'') + fmtN(diff);
+  sd.className = 'metric-val ' + (Math.abs(diff)<1?'green':diff<0?'red':'amber');
+
+  document.getElementById('ss-open').innerHTML    = fmt(open);
+  document.getElementById('ss-cash').innerHTML    = fmt(cash);
+  document.getElementById('ss-digital').innerHTML = fmt(phonepe + card);
+  document.getElementById('ss-phonepe').innerHTML = fmt(phonepe);
+  document.getElementById('ss-card').innerHTML    = fmt(card);
+  document.getElementById('ss-exp').innerHTML     = fmt(exp);
+  document.getElementById('ss-close').innerHTML   = fmt(close);
+  document.getElementById('ss-taken').innerHTML   = fmt(taken);
+  document.getElementById('ss-tomorrow').innerHTML= fmt(close - taken);
+
+  const cats = {};
+  S.expenses.forEach(e => { if(e.amt) cats[e.cat]=(cats[e.cat]||0)+(parseFloat(e.amt)||0); });
+  document.getElementById('sum-cats').innerHTML = Object.keys(cats).length
+    ? Object.entries(cats).map(([c,v])=>`<div class="sum-row"><span class="sl">${c}</span><span class="sv">${fmtN(v)}</span></div>`).join('')
+    : '<div class="sum-row"><span class="sl" style="opacity:.5">No expenses</span></div>';
+
+  document.getElementById('ss-notes').textContent    = S.rec?.openingNotes || '—';
+  document.getElementById('ss-counted').textContent  = S.rec?.countedBy    || '—';
+  document.getElementById('ss-closed').textContent   = S.rec?.closedBy     || '—';
+}
+
+document.getElementById('btn-print').addEventListener('click', () => {
+  const open  = S.rec?.openingCash||0;
+  const total = S.rec?.totalSales||0;
+  const ph    = S.rec?.phonepe||0;
+  const card  = S.rec?.cardSales||0;
+  const cash  = S.rec?.cashSales||0;
+  const exp   = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const close = S.rec?.closingCash||0;
+  const taken = S.rec?.takenHome||0;
+  const sep   = '─'.repeat(34);
+  let txt = `SR SHOES — DAILY HISAB
+Date: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}
+${sep}
+`;
+  txt += `Opening cash  : ${fmtN(open)}
+`;
+  txt += `Total sales   : ${fmtN(total)}
+`;
+  txt += `Phonepe (UPI) : ${fmtN(ph)}
+`;
+  txt += `Card/Swipe    : ${fmtN(card)}
+`;
+  txt += `Cash sales    : ${fmtN(cash)}
+`;
+  txt += `Expenses      : ${fmtN(exp)}
+`;
+  txt += `Closing cash  : ${fmtN(close)}
+`;
+  txt += `Taken home    : ${fmtN(taken)}
+`;
+  txt += `Tomorrow open : ${fmtN(close-taken)}
+${sep}
+`;
+  if(S.expenses.length){txt+='
+Expenses:
+';S.expenses.forEach(e=>{if(e.amt)txt+=`  ${(e.cat||'').padEnd(14)} ${fmtN(e.amt)}
+`;});}
+  if(S.rec?.openingNotes) txt+=`
+Notes     : ${S.rec.openingNotes}`;
+  if(S.rec?.countedBy)    txt+=`
+Counted by: ${S.rec.countedBy}`;
+  if(S.rec?.closedBy)     txt+=`
+Closed by : ${S.rec.closedBy}`;
+  const w=window.open('','_blank');
+  if(w){w.document.write(`<pre style="font-family:monospace;font-size:13px;padding:2rem">${txt}</pre>`);w.print();}
+});
 
 // ════════════════════════════════════════════════════
 // MONTHLY
