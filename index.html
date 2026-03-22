@@ -411,7 +411,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span></div>
   <div class="auth-sub">hisab.srshoe.in</div>
-  <div class="auth-ver">v1.1.7</div>
+  <div class="auth-ver">v1.1.8</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -434,7 +434,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.1.7</div>
+    <div class="topbar-ver">v1.1.8</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
 
@@ -506,6 +506,13 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <textarea id="opening-notes" placeholder="Any notes for the day..." style="flex:1;min-height:80px"></textarea>
           </div>
           <button class="btn-save" id="btn-save-opening">Save opening</button>
+          <div id="opening-locked-bar" style="display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:.75rem;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:var(--r);padding:10px 16px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:1rem;color:var(--green);">&#10003;</span>
+              <span style="font-family:var(--mono);font-size:.82rem;color:var(--green);font-weight:600;">Opening saved and locked</span>
+            </div>
+            <button id="btn-edit-opening" class="btn-outline" style="display:none;font-size:.75rem;padding:5px 14px;color:var(--accent);border-color:var(--accent);">Edit opening</button>
+          </div>
         </div>
       </div>
     </div>
@@ -635,7 +642,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.1.7</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.1.8</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -658,7 +665,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.1.7 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-ver">v1.1.8 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
