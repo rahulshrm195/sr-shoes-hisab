@@ -118,14 +118,6 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); min-hei
 /* ── Textarea ── */
 textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); border-radius:var(--r); padding:10px 12px; font-size:.82rem; font-family:var(--mono); color:var(--text); resize:vertical; min-height:60px; outline:none; }
 
-/* ── Expenses ── */
-.exp-list { margin-bottom:10px; }
-.exp-row { display:grid; grid-template-columns:100px 1fr 110px 30px; gap:6px; align-items:center; margin-bottom:6px; }
-.exp-row input,.exp-row select { background:var(--bg3); border:.5px solid var(--border); border-radius:var(--r); padding:8px 10px; font-size:.8rem; font-family:var(--mono); color:var(--text); outline:none; width:100%; }
-.exp-del { background:none; border:none; color:var(--hint); cursor:pointer; font-size:1rem; padding:4px; transition:color .15s; line-height:1; }
-.exp-del:hover { color:var(--red); }
-.btn-add { background:transparent; border:.5px dashed var(--border2); border-radius:var(--r); padding:8px 14px; font-size:.78rem; font-family:var(--mono); color:var(--muted); cursor:pointer; width:100%; transition:color .15s; }
-.btn-add:hover { color:var(--text); }
 
 /* ── Sales ── */
 .sales-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
@@ -265,6 +257,19 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 .staff-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:.5px solid var(--border); }
 .staff-item:last-child { border-bottom:none; }
 
+/* ── Field label ── */
+.field-label { display:block; font-size:.68rem; font-family:var(--mono); color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px; font-weight:600; }
+
+/* ── Expense today list ── */
+.exp-today-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:.5px solid var(--border); gap:10px; }
+.exp-today-row:last-child { border-bottom:none; }
+.exp-today-left { flex:1; min-width:0; }
+.exp-today-desc { font-size:.88rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.exp-today-cat  { font-size:.7rem; font-family:var(--mono); color:var(--muted); margin-top:2px; }
+.exp-today-amt  { font-family:var(--mono); font-size:.95rem; font-weight:700; color:var(--accent); white-space:nowrap; }
+.exp-today-del  { background:none; border:none; color:var(--hint); cursor:pointer; font-size:.85rem; padding:4px 6px; border-radius:6px; transition:color .15s; flex-shrink:0; }
+.exp-today-del:hover { color:var(--red); }
+
 /* ── Changelog ── */
 .changelog { display:flex; flex-direction:column; gap:1rem; }
 .cl-entry { padding-bottom:1rem; border-bottom:.5px solid var(--border); }
@@ -391,7 +396,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span></div>
   <div class="auth-sub">hisab.srshoe.in</div>
-  <div class="auth-ver">v1.1.2</div>
+  <div class="auth-ver">v1.1.3</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -414,7 +419,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.1.2</div>
+    <div class="topbar-ver">v1.1.3</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
 
@@ -491,21 +496,49 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 
     <!-- EXPENSES -->
     <div class="section" id="section-expenses">
-      <div class="card">
-        <div class="card-title">Expense entries</div>
-        <div class="exp-list" id="exp-list"></div>
-        <button class="btn-add" id="btn-add-expense">+ Add expense</button>
-      </div>
-      <div class="card">
-        <div class="total-row" style="margin-top:0;padding-top:0;border-top:none">
-          <span class="total-label">Total expenses today</span>
-          <span class="total-val" id="exp-total">&#8377;0</span>
+      <div class="pc-two-col">
+
+        <!-- Entry form -->
+        <div>
+          <div class="card">
+            <div class="card-title">Add expense</div>
+            <div style="margin-bottom:12px">
+              <label class="field-label">Amount (&#8377;)</label>
+              <input type="number" id="exp-amt" placeholder="0" inputmode="numeric"
+                style="width:100%;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);padding:12px 14px;font-family:var(--mono);font-size:1.4rem;font-weight:600;color:var(--text);outline:none;transition:border-color .2s;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
+            </div>
+            <div style="margin-bottom:12px">
+              <label class="field-label">Description</label>
+              <input type="text" id="exp-desc" placeholder="What was this for?"
+                style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;transition:border-color .2s;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
+            </div>
+            <div style="margin-bottom:16px">
+              <label class="field-label">Category</label>
+              <select id="exp-cat"
+                style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;cursor:pointer;">
+              </select>
+            </div>
+            <button class="btn-save" id="btn-save-one-expense" style="margin-top:0">Save expense</button>
+            <div id="exp-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);margin-top:8px;min-height:1em"></div>
+          </div>
         </div>
-      </div>
-      <button class="btn-save" id="btn-save-expenses">Save expenses</button>
-      <div class="card" id="exp-log-card" style="margin-top:.875rem;display:none">
-        <div class="card-title">Saved expenses today</div>
-        <div id="exp-log-list"></div>
+
+        <!-- Today's list -->
+        <div>
+          <div class="card">
+            <div class="card-title">Today's expenses</div>
+            <div id="exp-today-list">
+              <div style="font-size:.82rem;font-family:var(--mono);color:var(--hint);padding:8px 0">No expenses yet</div>
+            </div>
+            <div class="total-row">
+              <span class="total-label">Total expenses today</span>
+              <span class="total-val" id="exp-total">&#8377;0</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -586,7 +619,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.1.2</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.1.3</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -609,7 +642,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.1.2 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-ver">v1.1.3 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
@@ -1041,80 +1074,83 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
 // EXPENSES
 // ════════════════════════════════════════════════════
 function renderExpenses() {
-  const list = document.getElementById('exp-list');
-  list.innerHTML = '';
-  S.expenses.forEach(exp => {
-    const row = document.createElement('div');
-    row.className = 'exp-row';
-    row.innerHTML = `
-      <input type="number" placeholder="&#8377; Amount" value="${exp.amt||''}" oninput="updExp(${exp.id},'amt',this.value)" inputmode="numeric">
-      <input placeholder="Description" value="${exp.desc||''}" oninput="updExp(${exp.id},'desc',this.value)">
-      <select onchange="updExp(${exp.id},'cat',this.value)">${EXP_CATS.map(c=>`<option${exp.cat===c?' selected':''}>${c}</option>`).join('')}</select>
-      <button class="exp-del" onclick="delExp(${exp.id})">&#x2715;</button>`;
-    list.appendChild(row);
-  });
-  updExpTotal();
-  renderExpLog();
-}
-
-function renderExpLog() {
-  const saved = S.expenses.filter(e => e.amt && parseFloat(e.amt) > 0);
-  const card  = document.getElementById('exp-log-card');
-  const list  = document.getElementById('exp-log-list');
-  if (!saved.length) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-  list.innerHTML = saved.map(e =>
-    `<div class="exp-log-row">
-      <div><div>${e.desc || '&#8212;'}</div><div class="exp-log-cat">${e.cat}</div></div>
-      <div class="exp-log-amt">${fmtN(parseFloat(e.amt))}</div>
+  // Init category dropdown
+  const sel = document.getElementById('exp-cat');
+  if (sel && sel.options.length === 0) {
+    EXP_CATS.forEach(c => { const o = document.createElement('option'); o.textContent = c; sel.appendChild(o); });
+  }
+  const list = document.getElementById('exp-today-list');
+  if (!list) return;
+  if (!S.expenses.length) {
+    list.innerHTML = '<div style="font-size:.82rem;font-family:var(--mono);color:var(--hint);padding:8px 0">No expenses yet</div>';
+    document.getElementById('exp-total').innerHTML = fmt(0);
+    updateStatsBar();
+    return;
+  }
+  list.innerHTML = S.expenses.map(e =>
+    `<div class="exp-today-row">
+      <div class="exp-today-left">
+        <div class="exp-today-desc">${e.desc || '&#8212;'}</div>
+        <div class="exp-today-cat">${e.cat}</div>
+      </div>
+      <div class="exp-today-amt">${fmtN(parseFloat(e.amt)||0)}</div>
+      <button class="exp-today-del" onclick="delExp(${e.id})">&#x2715;</button>
     </div>`
   ).join('');
+  const total = S.expenses.reduce((s,e) => s+(parseFloat(e.amt)||0), 0);
+  document.getElementById('exp-total').innerHTML = fmt(total);
+  updateStatsBar();
 }
 
-function updExpTotal() {
-  const t = S.expenses.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
-  document.getElementById('exp-total').innerHTML = fmt(t);
-  return t;
-}
-
-window.updExp = (id,f,v) => { const e=S.expenses.find(x=>x.id===id); if(e) e[f]=v; updExpTotal(); calcClosing(); updateStatsBar(); };
-window.delExp = id => { S.expenses = S.expenses.filter(x=>x.id!==id); renderExpenses(); calcClosing(); };
-
-document.getElementById('btn-add-expense').addEventListener('click', () => {
-  S.expenses.push({ id: S.expId++, desc:'', cat: EXP_CATS[7], amt:'' });
-  renderExpenses();
-});
-
-document.getElementById('btn-save-expenses').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-save-expenses');
-  saveBtnState(btn, 'saving');
+window.delExp = async id => {
+  S.expenses = S.expenses.filter(x => x.id !== id);
   try {
     await saveRec({ date: S.today, expenses: S.expenses });
-    saveBtnState(btn, 'saved', 'Save expenses');
-    const total = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
-    showToast('Expenses saved — ' + fmtN(total) + ' total');
-    updateStatsBar();
-        // Push notification for expense save — must use SW for Android Chrome PWA
+    renderExpenses(); calcClosing();
+    showToast('Expense removed');
+  } catch(e) { showToast('Error: ' + e.message); }
+};
+
+document.getElementById('btn-save-one-expense').addEventListener('click', async () => {
+  const amt  = parseFloat(document.getElementById('exp-amt').value) || 0;
+  const desc = document.getElementById('exp-desc').value.trim();
+  const cat  = document.getElementById('exp-cat').value || EXP_CATS[0];
+  const err  = document.getElementById('exp-error');
+  err.textContent = '';
+  if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; return; }
+  S.expenses.push({ id: S.expId++, amt, desc, cat });
+  const btn = document.getElementById('btn-save-one-expense');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await saveRec({ date: S.today, expenses: S.expenses });
+    document.getElementById('exp-amt').value  = '';
+    document.getElementById('exp-desc').value = '';
+    document.getElementById('exp-cat').selectedIndex = 0;
+    document.getElementById('exp-amt').focus();
+    renderExpenses(); calcClosing();
+    btn.textContent = 'Saved ✓'; btn.classList.add('saved');
+    setTimeout(() => { btn.textContent = 'Save expense'; btn.classList.remove('saved'); btn.disabled = false; }, 1500);
+    showToast(cat + (desc ? ': ' + desc : '') + ' — ' + fmtN(amt));
     if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
-      const latest = S.expenses.filter(e=>e.amt&&parseFloat(e.amt)>0).slice(-1)[0];
-      const body = latest
-        ? latest.desc
-          ? latest.cat + ': ' + latest.desc + ' — ' + fmtN(parseFloat(latest.amt))
-          : latest.cat + ' — ' + fmtN(parseFloat(latest.amt))
-        : 'Total expenses: ' + fmtN(total);
       navigator.serviceWorker.ready.then(reg => {
         reg.showNotification('SR Shoes — Expense saved', {
-          body,
-          icon: '/icon-192.png',
-          badge: '/icon-192.png',
-          tag: 'expense-' + Date.now(),
-          vibrate: [100, 50, 100],
-          silent: false
+          body: cat + (desc ? ': ' + desc : '') + ' — ' + fmtN(amt),
+          icon: '/icon-192.png', badge: '/icon-192.png',
+          tag: 'expense-' + Date.now(), vibrate: [100, 50, 100]
         });
       });
     }
-  } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save expenses'); }
+  } catch(e) {
+    S.expenses.pop();
+    err.textContent = 'Error: ' + e.message;
+    btn.disabled = false; btn.textContent = 'Save expense';
+  }
 });
+
+document.getElementById('exp-amt').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('exp-desc').focus(); });
+document.getElementById('exp-desc').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-save-one-expense').click(); });
+
+
 
 // ════════════════════════════════════════════════════
 // CLOSING
