@@ -956,11 +956,6 @@ async function boot() {
   calcClosing();
   updateStatsBar();
   
-  // Lock opening if already saved
-  if (S.rec?.openingTime) {
-    setTimeout(() => lockOpening(), 100);
-  }
-
   // Carry-forward banner
   const prev = S.rec?.expectedOpening;
   if (prev != null) {
@@ -980,6 +975,11 @@ async function boot() {
 
   // Update stats bar LAST — after all data, DOM, and role are ready
   updateStatsBar();
+
+  // Lock opening LAST — after role is known so edit button shows correctly
+  if (S.rec?.openingTime) {
+    lockOpening();
+  }
 }
 
 async function loadRole() {
@@ -1437,10 +1437,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-document.getElementById('btn-edit-opening').addEventListener('click', () => {
-  unlockOpening();
-  showToast('Opening unlocked — make your changes and save again');
-});
+
 
 // ════════════════════════════════════════════════════
 // KEYBOARD SHORTCUTS — Ctrl/Cmd + 1-6 for tabs
