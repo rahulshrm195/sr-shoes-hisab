@@ -413,7 +413,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span></div>
   <div class="auth-sub">hisab.srshoe.in</div>
-  <div class="auth-ver">v1.2.3</div>
+  <div class="auth-ver">v1.2.5</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -436,7 +436,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.2.3</div>
+    <div class="topbar-ver">v1.2.5</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
 
@@ -731,7 +731,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.3</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.5</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -754,7 +754,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.2.3 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-ver">v1.2.5 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
@@ -1055,9 +1055,9 @@ async function boot() {
   calcClosing();
   updateStatsBar();
   
-  // Carry-forward banner
+  // Carry-forward banner — only show if opening not yet saved today
   const prev = S.rec?.expectedOpening;
-  if (prev != null) {
+  if (prev != null && !S.rec?.openingTime) {
     document.getElementById('carry-expected-val').innerHTML = fmt(prev);
     document.getElementById('carry-banner').style.display = 'flex';
     calcOpening();
@@ -1485,42 +1485,25 @@ document.getElementById('btn-print').addEventListener('click', () => {
   const exp   = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
   const close = S.rec?.closingCash||0;
   const taken = S.rec?.takenHome||0;
-  const sep   = '─'.repeat(34);
-  let txt = `SR SHOES — DAILY HISAB
-Date: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}
-${sep}
-`;
-  txt += `Opening cash  : ${fmtN(open)}
-`;
-  txt += `Total sales   : ${fmtN(total)}
-`;
-  txt += `Phonepe (UPI) : ${fmtN(ph)}
-`;
-  txt += `Card/Swipe    : ${fmtN(card)}
-`;
-  txt += `Cash sales    : ${fmtN(cash)}
-`;
-  txt += `Expenses      : ${fmtN(exp)}
-`;
-  txt += `Closing cash  : ${fmtN(close)}
-`;
-  txt += `Taken home    : ${fmtN(taken)}
-`;
-  txt += `Tomorrow open : ${fmtN(close-taken)}
-${sep}
-`;
-  if(S.expenses.length){txt+='
-Expenses:
-';S.expenses.forEach(e=>{if(e.amt)txt+=`  ${(e.cat||'').padEnd(14)} ${fmtN(e.amt)}
-`;});}
-  if(S.rec?.openingNotes) txt+=`
-Notes     : ${S.rec.openingNotes}`;
-  if(S.rec?.countedBy)    txt+=`
-Counted by: ${S.rec.countedBy}`;
-  if(S.rec?.closedBy)     txt+=`
-Closed by : ${S.rec.closedBy}`;
-  const w=window.open('','_blank');
-  if(w){w.document.write(`<pre style="font-family:monospace;font-size:13px;padding:2rem">${txt}</pre>`);w.print();}
+  const NL = '\n';
+  const SEP = '-'.repeat(34);
+  let txt = 'SR SHOES -- DAILY HISAB' + NL;
+  txt += 'Date: ' + new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + NL + SEP + NL;
+  txt += 'Opening cash  : ' + fmtN(open) + NL;
+  txt += 'Total sales   : ' + fmtN(total) + NL;
+  txt += 'Phonepe (UPI) : ' + fmtN(ph) + NL;
+  txt += 'Card/Swipe    : ' + fmtN(card) + NL;
+  txt += 'Cash sales    : ' + fmtN(cash) + NL;
+  txt += 'Expenses      : ' + fmtN(exp) + NL;
+  txt += 'Closing cash  : ' + fmtN(close) + NL;
+  txt += 'Taken home    : ' + fmtN(taken) + NL;
+  txt += 'Tomorrow open : ' + fmtN(close-taken) + NL + SEP + NL;
+  if(S.expenses.length) { txt += NL + 'Expenses:' + NL; S.expenses.forEach(e => { if(e.amt) txt += '  ' + (e.cat||'').padEnd(14) + ' ' + fmtN(e.amt) + NL; }); }
+  if(S.rec?.openingNotes) txt += NL + 'Notes     : ' + S.rec.openingNotes;
+  if(S.rec?.countedBy)    txt += NL + 'Counted by: ' + S.rec.countedBy;
+  if(S.rec?.closedBy)     txt += NL + 'Closed by : ' + S.rec.closedBy;
+  const w = window.open('','_blank');
+  if(w) { w.document.write('<pre style="font-family:monospace;font-size:13px;padding:2rem">' + txt + '</pre>'); w.print(); }
 });
 
 // ════════════════════════════════════════════════════
