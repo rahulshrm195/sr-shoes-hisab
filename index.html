@@ -955,17 +955,30 @@ function applyRole() {
 // STATS BAR
 // ════════════════════════════════════════════════════
 function updateStatsBar() {
+  console.log('[StatsBar] S.rec:', JSON.stringify(S.rec));
+  console.log('[StatsBar] S.expenses:', S.expenses.length);
+  
   const openCash  = S.rec?.openingCash;
   const expTotal  = S.expenses.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
   const cashSales = S.rec?.cashSales || parseFloat(document.getElementById('cash-sales')?.value) || 0;
   const countedBy = S.rec?.countedBy || document.getElementById('counted-by')?.value?.trim() || '';
   const isSaved   = !!S.rec?.openingTime;
 
-  document.getElementById('sb-opening').textContent  = openCash != null ? fmtN(openCash) : '—';
-  document.getElementById('sb-expenses').textContent = expTotal > 0 ? fmtN(expTotal) : '—';
-  document.getElementById('sb-sales').textContent    = cashSales > 0 ? fmtN(cashSales) : '—';
-  document.getElementById('sb-counted-by').textContent = countedBy || '—';
-  document.getElementById('sb-status').innerHTML = isSaved
+  console.log('[StatsBar] openCash:', openCash, 'expTotal:', expTotal, 'isSaved:', isSaved, 'countedBy:', countedBy);
+
+  const sbOpen = document.getElementById('sb-opening');
+  const sbExp  = document.getElementById('sb-expenses');
+  const sbSale = document.getElementById('sb-sales');
+  const sbBy   = document.getElementById('sb-counted-by');
+  const sbStat = document.getElementById('sb-status');
+
+  console.log('[StatsBar] DOM elements found:', !!sbOpen, !!sbExp, !!sbSale, !!sbBy, !!sbStat);
+
+  if (sbOpen) sbOpen.textContent  = openCash != null ? fmtN(openCash) : '—';
+  if (sbExp)  sbExp.textContent   = expTotal > 0 ? fmtN(expTotal) : '—';
+  if (sbSale) sbSale.textContent  = cashSales > 0 ? fmtN(cashSales) : '—';
+  if (sbBy)   sbBy.textContent    = countedBy || '—';
+  if (sbStat) sbStat.innerHTML    = isSaved
     ? '<span class="sb-badge saved">Saved ✓</span>'
     : '<span class="sb-badge pending">Not saved</span>';
 }
