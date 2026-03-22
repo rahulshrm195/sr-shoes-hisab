@@ -262,6 +262,16 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 .staff-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:.5px solid var(--border); }
 .staff-item:last-child { border-bottom:none; }
 
+/* ── Opening layout ── */
+.opening-layout { display:flex; flex-direction:column; gap:.875rem; }
+.opening-right-col { display:flex; flex-direction:column; gap:.875rem; }
+
+@media (min-width:768px) {
+  .opening-layout { flex-direction:row; align-items:flex-start; gap:1.5rem; }
+  .opening-denoms-col { flex:2; margin-bottom:0; }
+  .opening-right-col { flex:1; min-width:280px; }
+}
+
 /* ── Field label ── */
 .field-label { display:block; font-size:.68rem; font-family:var(--mono); color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px; font-weight:600; }
 
@@ -305,13 +315,13 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   .nav-tab { font-size:.75rem; padding:14px 20px 13px; flex:none; letter-spacing:.07em; }
 
   /* Full width — store PC fills the screen */
-  .main { max-width:100%; padding:2rem 3rem 3rem; }
+  .main { max-width:100%; padding:1rem 3rem 2rem; }
 
   /* Two-column layout for opening/closing */
   .pc-two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start; }
   .pc-full { grid-column:1/-1; }
 
-  .card { padding:1.5rem 1.75rem; margin-bottom:1.25rem; border-radius:14px; }
+  .card { padding:1rem 1.5rem; margin-bottom:.875rem; border-radius:14px; }
   .card-title { font-size:.72rem; margin-bottom:1.25rem; letter-spacing:.14em; }
 
   /* Denomination grid — 6 col, big inputs for quick typing */
@@ -322,9 +332,9 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   .denom-sub { font-size:.75rem; }
   .denom-section-label { font-size:.72rem; margin:1.25rem 0 10px; }
 
-  .total-row { padding-top:1.25rem; margin-top:1.25rem; }
-  .total-label { font-size:.85rem; }
-  .total-val { font-size:2.2rem; }
+  .total-row { padding-top:.875rem; margin-top:.875rem; }
+  .total-label { font-size:.82rem; }
+  .total-val { font-size:1.8rem; }
 
   /* Metrics 4-col */
   .metrics { grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:1.25rem; }
@@ -401,7 +411,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span></div>
   <div class="auth-sub">hisab.srshoe.in</div>
-  <div class="auth-ver">v1.1.4</div>
+  <div class="auth-ver">v1.1.5</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -424,7 +434,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.1.4</div>
+    <div class="topbar-ver">v1.1.5</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
 
@@ -475,8 +485,9 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="mismatch-row pc-full" id="mismatch-row" style="display:none">
         <input id="mismatch-reason" placeholder="Reason for mismatch (e.g. owner took home &#8377;2000)">
       </div>
-      <div class="pc-two-col">
-        <div class="card pc-full">
+      <!-- Mobile: stacked. PC: denom grid left (2/3), notes+save right (1/3) -->
+      <div class="opening-layout">
+        <div class="card opening-denoms-col">
           <div class="card-title">Cash count &#8212; denomination wise</div>
           <div id="open-denoms"></div>
           <div class="total-row">
@@ -484,16 +495,16 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <span class="total-val" id="opening-total">&#8377;0</span>
           </div>
         </div>
-        <div class="card">
-          <div class="card-title">Opening notes</div>
-          <div style="margin-bottom:10px">
-            <label style="display:block;font-size:.68rem;font-family:var(--mono);color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600">Cash counted by</label>
-            <input type="text" id="counted-by" placeholder="Enter your name" style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;">
+        <div class="opening-right-col">
+          <div class="card" style="flex:1">
+            <div class="card-title">Opening notes</div>
+            <div style="margin-bottom:10px">
+              <label style="display:block;font-size:.68rem;font-family:var(--mono);color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600">Cash counted by</label>
+              <input type="text" id="counted-by" placeholder="Enter your name" style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;">
+            </div>
+            <label style="display:block;font-size:.68rem;font-family:var(--mono);color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600">Notes</label>
+            <textarea id="opening-notes" placeholder="Any notes for the day..." style="flex:1;min-height:80px"></textarea>
           </div>
-          <label style="display:block;font-size:.68rem;font-family:var(--mono);color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600">Notes</label>
-          <textarea id="opening-notes" placeholder="Any notes for the day..."></textarea>
-        </div>
-        <div>
           <button class="btn-save" id="btn-save-opening">Save opening</button>
         </div>
       </div>
@@ -624,7 +635,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.1.4</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.1.5</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -647,7 +658,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.1.4 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-ver">v1.1.5 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
