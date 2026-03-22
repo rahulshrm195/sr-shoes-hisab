@@ -1054,6 +1054,7 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
 // OPENING
 // ════════════════════════════════════════════════════
 function lockOpening() {
+  console.log('[lockOpening] called. S.role:', S.role);
   // Lock all denom inputs
   document.querySelectorAll('#open-denoms input').forEach(el => {
     el.readOnly = true;
@@ -1070,6 +1071,7 @@ function lockOpening() {
   document.getElementById('opening-locked-bar').style.display = 'flex';
   // Show edit button only for owner
   const editBtn = document.getElementById('btn-edit-opening');
+  console.log('[lockOpening] editBtn found:', !!editBtn, '| role:', S.role, '| display:', S.role === 'owner' ? 'block' : 'none');
   if (editBtn) editBtn.style.display = S.role === 'owner' ? 'block' : 'none';
 }
 
