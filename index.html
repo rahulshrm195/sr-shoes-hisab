@@ -413,7 +413,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span></div>
   <div class="auth-sub">hisab.srshoe.in</div>
-  <div class="auth-ver">v1.2.5</div>
+  <div class="auth-ver">v1.2.6</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -436,7 +436,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.2.5</div>
+    <div class="topbar-ver">v1.2.6</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
 
@@ -726,12 +726,20 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
     <div class="section" id="section-settings">
       <div class="card">
         <div class="card-title">Notifications</div>
+        <div class="setting-row">
+          <label>Permission status</label>
+          <span id="notif-status-text" style="font-family:var(--mono);font-size:.78rem;"></span>
+        </div>
+        <div class="setting-row" id="notif-enable-row" style="display:none">
+          <label>Enable notifications</label>
+          <button class="btn-outline" id="btn-request-notif" style="font-size:.75rem;padding:5px 14px;">Enable now</button>
+        </div>
         <div class="setting-row"><label>EOD reminder time</label><input type="time" id="eod-time" value="20:00"></div>
         <div class="setting-row"><label>Low cash alert (&#8377;)</label><input type="number" id="low-cash" value="500"></div>
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.5</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.6</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -754,7 +762,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.2.5 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-ver">v1.2.6 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
@@ -1149,7 +1157,7 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     document.getElementById('section-' + tab.dataset.tab).classList.add('active');
     if (tab.dataset.tab === 'summary')   updateStatsBar();
     if (tab.dataset.tab === 'monthly')   loadMonthly();
-    if (tab.dataset.tab === 'settings')  loadUsers();
+    if (tab.dataset.tab === 'settings')  { loadUsers(); updateNotifStatus(); }
   });
 });
 
@@ -1535,7 +1543,8 @@ async function loadMonthly() {
     ).join('') || '<div class="sum-row"><span class="sl" style="opacity:.5">No records yet</span></div>';
   } catch(e) {
     document.getElementById('monthly-spinner').style.display = 'none';
-    showToast('Error loading monthly: ' + e.message);
+    console.error('[Monthly] Full error:', e);
+    showToast('Error: ' + e.message);
   }
 }
 
@@ -1604,6 +1613,42 @@ async function registerUserOnLogin(user) {
 // ════════════════════════════════════════════════════
 // SETTINGS
 // ════════════════════════════════════════════════════
+function updateNotifStatus() {
+  const el = document.getElementById('notif-status-text');
+  const row = document.getElementById('notif-enable-row');
+  if (!el) return;
+  if (!('Notification' in window)) {
+    el.textContent = 'Not supported on this device';
+    el.style.color = 'var(--red)';
+    return;
+  }
+  const p = Notification.permission;
+  if (p === 'granted') {
+    el.textContent = 'Enabled ✓';
+    el.style.color = 'var(--green)';
+    if (row) row.style.display = 'none';
+  } else if (p === 'denied') {
+    el.textContent = 'Blocked — enable in Android Settings > Apps > Chrome > Notifications';
+    el.style.color = 'var(--red)';
+    if (row) row.style.display = 'none';
+  } else {
+    el.textContent = 'Not yet enabled';
+    el.style.color = 'var(--muted)';
+    if (row) row.style.display = 'flex';
+  }
+}
+
+document.getElementById('btn-request-notif')?.addEventListener('click', async () => {
+  const p = await Notification.requestPermission();
+  updateNotifStatus();
+  if (p === 'granted') {
+    showToast('Notifications enabled!');
+    scheduleEOD();
+  } else if (p === 'denied') {
+    showToast('Blocked — go to Android Settings to enable');
+  }
+});
+
 document.getElementById('btn-save-settings').addEventListener('click', async () => {
   S.settings = { eodTime: document.getElementById('eod-time').value, lowCashAlert: parseFloat(document.getElementById('low-cash').value)||500 };
   await db.collection('settings').doc(STORE_ID).set(S.settings, {merge:true});
