@@ -120,7 +120,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 
 /* ── Expenses ── */
 .exp-list { margin-bottom:10px; }
-.exp-row { display:grid; grid-template-columns:1fr 100px 80px 30px; gap:6px; align-items:center; margin-bottom:6px; }
+.exp-row { display:grid; grid-template-columns:100px 1fr 110px 30px; gap:6px; align-items:center; margin-bottom:6px; }
 .exp-row input,.exp-row select { background:var(--bg3); border:.5px solid var(--border); border-radius:var(--r); padding:8px 10px; font-size:.8rem; font-family:var(--mono); color:var(--text); outline:none; width:100%; }
 .exp-del { background:none; border:none; color:var(--hint); cursor:pointer; font-size:1rem; padding:4px; transition:color .15s; line-height:1; }
 .exp-del:hover { color:var(--red); }
@@ -198,6 +198,112 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 .toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(10px); background:var(--text); border:1px solid var(--text); border-radius:100px; padding:9px 20px; font-size:.78rem; font-family:var(--mono); color:#ffffff; z-index:200; opacity:0; transition:opacity .2s,transform .2s; pointer-events:none; white-space:nowrap; }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
+/* ── Status bar ── */
+.status-bar {
+  display:flex;
+  align-items:center;
+  background:var(--accent);
+  padding:0 1rem;
+  height:40px;
+  gap:0;
+  overflow-x:auto;
+  scrollbar-width:none;
+  flex-shrink:0;
+}
+.status-bar::-webkit-scrollbar { display:none; }
+.status-item {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:0 12px;
+  white-space:nowrap;
+}
+.status-label {
+  font-size:.62rem;
+  font-family:var(--mono);
+  color:rgba(255,255,255,0.7);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.status-val {
+  font-size:.82rem;
+  font-family:var(--mono);
+  font-weight:600;
+  color:#ffffff;
+}
+.status-divider {
+  width:.5px;
+  height:20px;
+  background:rgba(255,255,255,0.25);
+  flex-shrink:0;
+}
+.status-badge {
+  font-size:.6rem;
+  font-family:var(--mono);
+  font-weight:700;
+  padding:2px 6px;
+  border-radius:20px;
+}
+.status-badge.saved {
+  background:rgba(255,255,255,0.25);
+  color:#ffffff;
+}
+@media (min-width:768px) {
+  .status-bar { padding:0 2.5rem; height:44px; }
+  .status-item { padding:0 20px; gap:8px; }
+  .status-label { font-size:.65rem; }
+  .status-val { font-size:.9rem; }
+}
+
+/* ── Stats bar ── */
+.stats-bar {
+  display:flex;
+  align-items:center;
+  background:var(--accent);
+  padding:0 1rem;
+  gap:0;
+  overflow-x:auto;
+  scrollbar-width:none;
+  flex-shrink:0;
+}
+.stats-bar::-webkit-scrollbar { display:none; }
+.stat-item {
+  display:flex;
+  flex-direction:column;
+  padding:7px 14px;
+  min-width:fit-content;
+}
+.stat-label {
+  font-size:.58rem;
+  font-family:var(--mono);
+  color:rgba(255,255,255,0.7);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:2px;
+}
+.stat-val {
+  font-family:var(--mono);
+  font-size:.85rem;
+  font-weight:600;
+  color:#ffffff;
+  white-space:nowrap;
+}
+.stat-divider {
+  width:0.5px;
+  height:32px;
+  background:rgba(255,255,255,0.25);
+  flex-shrink:0;
+}
+.sb-badge {
+  font-size:.65rem;
+  padding:2px 8px;
+  border-radius:20px;
+  font-family:var(--mono);
+  font-weight:600;
+}
+.sb-badge.saved   { background:rgba(255,255,255,0.2); color:#ffffff; }
+.sb-badge.pending { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); }
+
 /* ── Spinner ── */
 .spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; margin:2rem auto; }
 @keyframes spin { to{transform:rotate(360deg)} }
@@ -265,7 +371,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   .metric-val { font-size:1.3rem; }
 
   /* Expenses — full width inputs */
-  .exp-row { grid-template-columns:1fr 180px 140px 38px; gap:12px; }
+  .exp-row { grid-template-columns:130px 1fr 160px 38px; gap:12px; }
   .exp-row input,.exp-row select { font-size:.92rem; padding:10px 14px; }
   .btn-add { font-size:.85rem; padding:11px 18px; }
   .exp-log-row { font-size:.85rem; padding:8px 0; }
@@ -333,7 +439,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span></div>
   <div class="auth-sub">hisab.srshoe.in</div>
-  <div class="auth-ver">v1.0.8</div>
+  <div class="auth-ver">v1.0.9</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -350,12 +456,71 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
     <span>Enable notifications for EOD reminders</span>
     <button id="btn-enable-notif">Enable</button>
   </div>
+
+  <!-- Always-visible status bar -->
+  <div class="status-bar" id="status-bar">
+    <div class="status-item">
+      <span class="status-label">Opening</span>
+      <span class="status-val" id="sb-opening">&#8377;0</span>
+      <span class="status-badge" id="sb-opening-badge"></span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">Expenses</span>
+      <span class="status-val" id="sb-expenses">&#8377;0</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">Sales</span>
+      <span class="status-val" id="sb-sales">&#8377;0</span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">Closing</span>
+      <span class="status-val" id="sb-closing">&#8377;0</span>
+      <span class="status-badge" id="sb-closing-badge"></span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <span class="status-label">Counted by</span>
+      <span class="status-val" id="sb-counted-by">&#8212;</span>
+    </div>
+  </div>
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.0.8</div>
+    <div class="topbar-ver">v1.0.9</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
+
+  <!-- Persistent stats bar -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-item">
+      <div class="stat-label">Opening cash</div>
+      <div class="stat-val" id="sb-opening">&#8212;</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-label">Total expenses</div>
+      <div class="stat-val" id="sb-expenses">&#8212;</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-label">Cash sales</div>
+      <div class="stat-val" id="sb-sales">&#8212;</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-label">Opening status</div>
+      <div class="stat-val" id="sb-status"><span class="sb-badge pending">Not saved</span></div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-label">Counted by</div>
+      <div class="stat-val" id="sb-counted-by">&#8212;</div>
+    </div>
+  </div>
+
   <nav class="nav-tabs">
     <button class="nav-tab active" data-tab="opening">Opening</button>
     <button class="nav-tab" data-tab="expenses">Expenses</button>
@@ -390,6 +555,11 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         </div>
         <div class="card">
           <div class="card-title">Opening notes</div>
+          <div style="margin-bottom:10px">
+            <label style="display:block;font-size:.68rem;font-family:var(--mono);color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600">Cash counted by</label>
+            <input type="text" id="counted-by" placeholder="Enter your name" style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;">
+          </div>
+          <label style="display:block;font-size:.68rem;font-family:var(--mono);color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600">Notes</label>
           <textarea id="opening-notes" placeholder="Any notes for the day..."></textarea>
         </div>
         <div>
@@ -495,7 +665,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.0.8</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.0.9</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -518,7 +688,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.0.8 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-ver">v1.0.9 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
@@ -810,10 +980,13 @@ async function boot() {
   if (S.rec?.cashSales != null)    document.getElementById('cash-sales').value    = S.rec.cashSales;
   if (S.rec?.digitalSales != null) document.getElementById('digital-sales').value = S.rec.digitalSales;
   if (S.rec?.openingNotes) document.getElementById('opening-notes').value = S.rec.openingNotes;
+  if (S.rec?.countedBy)   document.getElementById('counted-by').value   = S.rec.countedBy;
+  if (S.rec?.countedBy)   document.getElementById('counted-by').value   = S.rec.countedBy;
 
   renderExpenses();
   calcClosing();
   updateSummary();
+  updateStatusBar();
 
   // Carry-forward banner
   const prev = S.rec?.expectedOpening;
@@ -825,6 +998,9 @@ async function boot() {
 
   // Load role for this user
   await loadRole();
+
+  // Init stats bar
+  updateStatsBar();
 
   // Notifications
   if ('Notification' in window && Notification.permission === 'default') {
@@ -855,6 +1031,25 @@ function applyRole() {
       document.querySelector('.nav-tab[data-tab="opening"]').click();
     }
   }
+}
+
+// ════════════════════════════════════════════════════
+// STATS BAR
+// ════════════════════════════════════════════════════
+function updateStatsBar() {
+  const openCash  = S.rec?.openingCash;
+  const expTotal  = S.expenses.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
+  const cashSales = S.rec?.cashSales || parseFloat(document.getElementById('cash-sales')?.value) || 0;
+  const countedBy = document.getElementById('counted-by')?.value?.trim() || S.rec?.countedBy || '';
+  const isSaved   = !!S.rec?.openingTime;
+
+  document.getElementById('sb-opening').textContent  = openCash != null ? fmtN(openCash) : '—';
+  document.getElementById('sb-expenses').textContent = expTotal > 0 ? fmtN(expTotal) : '—';
+  document.getElementById('sb-sales').textContent    = cashSales > 0 ? fmtN(cashSales) : '—';
+  document.getElementById('sb-counted-by').textContent = countedBy || '—';
+  document.getElementById('sb-status').innerHTML = isSaved
+    ? '<span class="sb-badge saved">Saved ✓</span>'
+    : '<span class="sb-badge pending">Not saved</span>';
 }
 
 // ════════════════════════════════════════════════════
@@ -901,6 +1096,7 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
       openingCash: getDenomTotal('open-denoms'),
       openingCounts: getDenomCounts('open-denoms'),
       openingNotes: document.getElementById('opening-notes').value.trim(),
+      countedBy: document.getElementById('counted-by').value.trim() || S.user.displayName || S.user.email,
       openingTime: new Date().toISOString(),
       mismatchReason: document.getElementById('mismatch-reason')?.value.trim() || null
     };
@@ -908,6 +1104,8 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
     S.rec = { ...S.rec, ...data };
     saveBtnState(btn, 'saved', 'Save opening');
     showToast('Opening saved');
+    updateStatsBar();
+    updateStatusBar();
   } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save opening'); }
 });
 
@@ -921,9 +1119,9 @@ function renderExpenses() {
     const row = document.createElement('div');
     row.className = 'exp-row';
     row.innerHTML = `
+      <input type="number" placeholder="&#8377; Amount" value="${exp.amt||''}" oninput="updExp(${exp.id},'amt',this.value)" inputmode="numeric">
       <input placeholder="Description" value="${exp.desc||''}" oninput="updExp(${exp.id},'desc',this.value)">
       <select onchange="updExp(${exp.id},'cat',this.value)">${EXP_CATS.map(c=>`<option${exp.cat===c?' selected':''}>${c}</option>`).join('')}</select>
-      <input type="number" placeholder="0" value="${exp.amt||''}" oninput="updExp(${exp.id},'amt',this.value)" inputmode="numeric">
       <button class="exp-del" onclick="delExp(${exp.id})">&#x2715;</button>`;
     list.appendChild(row);
   });
@@ -951,7 +1149,7 @@ function updExpTotal() {
   return t;
 }
 
-window.updExp = (id,f,v) => { const e=S.expenses.find(x=>x.id===id); if(e) e[f]=v; updExpTotal(); calcClosing(); };
+window.updExp = (id,f,v) => { const e=S.expenses.find(x=>x.id===id); if(e) e[f]=v; updExpTotal(); calcClosing(); updateStatusBar(); };
 window.delExp = id => { S.expenses = S.expenses.filter(x=>x.id!==id); renderExpenses(); calcClosing(); };
 
 document.getElementById('btn-add-expense').addEventListener('click', () => {
@@ -967,6 +1165,8 @@ document.getElementById('btn-save-expenses').addEventListener('click', async () 
     saveBtnState(btn, 'saved', 'Save expenses');
     const total = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
     showToast('Expenses saved — ' + fmtN(total) + ' total');
+    updateStatsBar();
+    updateStatusBar();
     // Push notification for expense save — must use SW for Android Chrome PWA
     if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
       const latest = S.expenses.filter(e=>e.amt&&parseFloat(e.amt)>0).slice(-1)[0];
@@ -1038,6 +1238,7 @@ document.getElementById('btn-save-closing').addEventListener('click', async () =
     await saveRec({ date: tomorrow, expectedOpening: closeCash });
     S.rec = { ...S.rec, ...data };
     saveBtnState(btn, 'saved', 'Save & close day');
+    updateStatusBar();
     showToast('Day closed — ' + fmtN(closeCash) + ' carried forward');
   } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save & close day'); }
 });
@@ -1045,6 +1246,29 @@ document.getElementById('btn-save-closing').addEventListener('click', async () =
 // ════════════════════════════════════════════════════
 // SUMMARY
 // ════════════════════════════════════════════════════
+function updateStatusBar() {
+  const openCash  = S.rec?.openingCash || 0;
+  const expTotal  = S.expenses.reduce((s,e) => s+(parseFloat(e.amt)||0), 0);
+  const cashSales = S.rec?.cashSales || parseFloat(document.getElementById('cash-sales')?.value)||0;
+  const digital   = S.rec?.digitalSales || parseFloat(document.getElementById('digital-sales')?.value)||0;
+  const closeCash = S.rec?.closingCash || 0;
+  const countedBy = S.rec?.countedBy || document.getElementById('counted-by')?.value || '—';
+
+  document.getElementById('sb-opening').innerHTML  = fmtN(openCash);
+  document.getElementById('sb-expenses').innerHTML = fmtN(expTotal);
+  document.getElementById('sb-sales').innerHTML    = fmtN(cashSales + digital);
+  document.getElementById('sb-closing').innerHTML  = fmtN(closeCash);
+  document.getElementById('sb-counted-by').textContent = countedBy || '—';
+
+  const obadge = document.getElementById('sb-opening-badge');
+  obadge.textContent   = S.rec?.openingTime ? 'Saved ✓' : '';
+  obadge.className     = S.rec?.openingTime ? 'status-badge saved' : 'status-badge';
+
+  const cbadge = document.getElementById('sb-closing-badge');
+  cbadge.textContent   = S.rec?.closingTime ? 'Saved ✓' : '';
+  cbadge.className     = S.rec?.closingTime ? 'status-badge saved' : 'status-badge';
+}
+
 function updateSummary() {
   const open    = S.rec?.openingCash || 0;
   const cash    = S.rec?.cashSales    || parseFloat(document.getElementById('cash-sales')?.value)||0;
@@ -1232,6 +1456,33 @@ function scheduleEOD() {
 // ════════════════════════════════════════════════════
 document.querySelectorAll('.modal-backdrop').forEach(b => b.addEventListener('click', e => { if(e.target===b) closeModals(); }));
 document.querySelectorAll('.modal-close').forEach(btn => btn.addEventListener('click', closeModals));
+
+// ════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS — Ctrl/Cmd + 1-6 for tabs
+// ════════════════════════════════════════════════════
+const TAB_KEYS = ['opening','expenses','closing','summary','monthly','settings'];
+document.addEventListener('keydown', e => {
+  const num = parseInt(e.key);
+  if ((e.ctrlKey || e.metaKey) && num >= 1 && num <= 6) {
+    e.preventDefault();
+    const tabName = TAB_KEYS[num - 1];
+    const tab = document.querySelector(`.nav-tab[data-tab="${tabName}"]`);
+    if (tab && tab.style.display !== 'none') tab.click();
+  }
+});
+
+// ════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS — Ctrl/Cmd + 1-6 for tabs
+// ════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const tabs = [...document.querySelectorAll('.nav-tab')].filter(t => t.style.display !== 'none');
+  const num = parseInt(e.key);
+  if (num >= 1 && num <= tabs.length) {
+    e.preventDefault();
+    tabs[num - 1].click();
+  }
+});
 
 // ════════════════════════════════════════════════════
 // PWA INSTALL
