@@ -918,9 +918,6 @@ async function boot() {
   // Load role for this user
   await loadRole();
 
-  // Init stats bar
-  updateStatsBar();
-
   // Notifications
   if ('Notification' in window && Notification.permission === 'default') {
     document.getElementById('notif-bar').classList.add('show');
@@ -934,6 +931,8 @@ async function loadRole() {
     S.role = snap.exists ? (snap.data().role || 'staff') : 'staff';
   } catch(e) { S.role = 'staff'; }
   applyRole();
+  // Update stats bar here — after all data restored AND role applied
+  updateStatsBar();
 }
 
 function applyRole() {
@@ -959,7 +958,7 @@ function updateStatsBar() {
   const openCash  = S.rec?.openingCash;
   const expTotal  = S.expenses.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
   const cashSales = S.rec?.cashSales || parseFloat(document.getElementById('cash-sales')?.value) || 0;
-  const countedBy = document.getElementById('counted-by')?.value?.trim() || S.rec?.countedBy || '';
+  const countedBy = S.rec?.countedBy || document.getElementById('counted-by')?.value?.trim() || '';
   const isSaved   = !!S.rec?.openingTime;
 
   document.getElementById('sb-opening').textContent  = openCash != null ? fmtN(openCash) : '—';
