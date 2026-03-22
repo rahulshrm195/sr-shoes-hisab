@@ -198,62 +198,9 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 .toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(10px); background:var(--text); border:1px solid var(--text); border-radius:100px; padding:9px 20px; font-size:.78rem; font-family:var(--mono); color:#ffffff; z-index:200; opacity:0; transition:opacity .2s,transform .2s; pointer-events:none; white-space:nowrap; }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ── Status bar ── */
-.status-bar {
-  display:flex;
-  align-items:center;
-  background:var(--accent);
-  padding:0 1rem;
-  height:40px;
-  gap:0;
-  overflow-x:auto;
-  scrollbar-width:none;
-  flex-shrink:0;
-}
-.status-bar::-webkit-scrollbar { display:none; }
-.status-item {
-  display:flex;
-  align-items:center;
-  gap:6px;
-  padding:0 12px;
-  white-space:nowrap;
-}
-.status-label {
-  font-size:.62rem;
-  font-family:var(--mono);
-  color:rgba(255,255,255,0.7);
-  letter-spacing:.08em;
-  text-transform:uppercase;
-}
-.status-val {
-  font-size:.82rem;
-  font-family:var(--mono);
-  font-weight:600;
-  color:#ffffff;
-}
-.status-divider {
-  width:.5px;
-  height:20px;
-  background:rgba(255,255,255,0.25);
-  flex-shrink:0;
-}
-.status-badge {
-  font-size:.6rem;
-  font-family:var(--mono);
-  font-weight:700;
-  padding:2px 6px;
-  border-radius:20px;
-}
-.status-badge.saved {
-  background:rgba(255,255,255,0.25);
-  color:#ffffff;
-}
+
 @media (min-width:768px) {
-  .status-bar { padding:0 2.5rem; height:44px; }
-  .status-item { padding:0 20px; gap:8px; }
-  .status-label { font-size:.65rem; }
-  .status-val { font-size:.9rem; }
-}
+        }
 
 /* ── Stats bar ── */
 .stats-bar {
@@ -458,34 +405,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   </div>
 
   <!-- Always-visible status bar -->
-  <div class="status-bar" id="status-bar">
-    <div class="status-item">
-      <span class="status-label">Opening</span>
-      <span class="status-val" id="sb-opening">&#8377;0</span>
-      <span class="status-badge" id="sb-opening-badge"></span>
-    </div>
-    <div class="status-divider"></div>
-    <div class="status-item">
-      <span class="status-label">Expenses</span>
-      <span class="status-val" id="sb-expenses">&#8377;0</span>
-    </div>
-    <div class="status-divider"></div>
-    <div class="status-item">
-      <span class="status-label">Sales</span>
-      <span class="status-val" id="sb-sales">&#8377;0</span>
-    </div>
-    <div class="status-divider"></div>
-    <div class="status-item">
-      <span class="status-label">Closing</span>
-      <span class="status-val" id="sb-closing">&#8377;0</span>
-      <span class="status-badge" id="sb-closing-badge"></span>
-    </div>
-    <div class="status-divider"></div>
-    <div class="status-item">
-      <span class="status-label">Counted by</span>
-      <span class="status-val" id="sb-counted-by">&#8212;</span>
-    </div>
-  </div>
+  
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span></div>
     <div class="topbar-date" id="topbar-date"></div>
@@ -986,8 +906,7 @@ async function boot() {
   renderExpenses();
   calcClosing();
   updateSummary();
-  updateStatusBar();
-
+  
   // Carry-forward banner
   const prev = S.rec?.expectedOpening;
   if (prev != null) {
@@ -1105,8 +1024,7 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
     saveBtnState(btn, 'saved', 'Save opening');
     showToast('Opening saved');
     updateStatsBar();
-    updateStatusBar();
-  } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save opening'); }
+      } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save opening'); }
 });
 
 // ════════════════════════════════════════════════════
@@ -1166,8 +1084,7 @@ document.getElementById('btn-save-expenses').addEventListener('click', async () 
     const total = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
     showToast('Expenses saved — ' + fmtN(total) + ' total');
     updateStatsBar();
-    updateStatusBar();
-    // Push notification for expense save — must use SW for Android Chrome PWA
+        // Push notification for expense save — must use SW for Android Chrome PWA
     if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
       const latest = S.expenses.filter(e=>e.amt&&parseFloat(e.amt)>0).slice(-1)[0];
       const body = latest
@@ -1238,76 +1155,13 @@ document.getElementById('btn-save-closing').addEventListener('click', async () =
     await saveRec({ date: tomorrow, expectedOpening: closeCash });
     S.rec = { ...S.rec, ...data };
     saveBtnState(btn, 'saved', 'Save & close day');
-    updateStatusBar();
-    showToast('Day closed — ' + fmtN(closeCash) + ' carried forward');
+        showToast('Day closed — ' + fmtN(closeCash) + ' carried forward');
   } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save & close day'); }
 });
 
 // ════════════════════════════════════════════════════
 // SUMMARY
 // ════════════════════════════════════════════════════
-function updateStatusBar() {
-  const openCash  = S.rec?.openingCash || 0;
-  const expTotal  = S.expenses.reduce((s,e) => s+(parseFloat(e.amt)||0), 0);
-  const cashSales = S.rec?.cashSales || parseFloat(document.getElementById('cash-sales')?.value)||0;
-  const digital   = S.rec?.digitalSales || parseFloat(document.getElementById('digital-sales')?.value)||0;
-  const closeCash = S.rec?.closingCash || 0;
-  const countedBy = S.rec?.countedBy || document.getElementById('counted-by')?.value || '—';
-
-  document.getElementById('sb-opening').innerHTML  = fmtN(openCash);
-  document.getElementById('sb-expenses').innerHTML = fmtN(expTotal);
-  document.getElementById('sb-sales').innerHTML    = fmtN(cashSales + digital);
-  document.getElementById('sb-closing').innerHTML  = fmtN(closeCash);
-  document.getElementById('sb-counted-by').textContent = countedBy || '—';
-
-  const obadge = document.getElementById('sb-opening-badge');
-  obadge.textContent   = S.rec?.openingTime ? 'Saved ✓' : '';
-  obadge.className     = S.rec?.openingTime ? 'status-badge saved' : 'status-badge';
-
-  const cbadge = document.getElementById('sb-closing-badge');
-  cbadge.textContent   = S.rec?.closingTime ? 'Saved ✓' : '';
-  cbadge.className     = S.rec?.closingTime ? 'status-badge saved' : 'status-badge';
-}
-
-function updateSummary() {
-  const open    = S.rec?.openingCash || 0;
-  const cash    = S.rec?.cashSales    || parseFloat(document.getElementById('cash-sales')?.value)||0;
-  const digital = S.rec?.digitalSales || parseFloat(document.getElementById('digital-sales')?.value)||0;
-  const exp     = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
-  const close   = S.rec?.closingCash  || getDenomTotal('close-denoms');
-  const diff    = close - (open + cash - exp);
-
-  document.getElementById('s-sales').innerHTML    = fmt(cash+digital);
-  document.getElementById('s-expenses').innerHTML = fmt(exp);
-  const sd = document.getElementById('s-diff');
-  sd.innerHTML = (diff>=0?'+':'') + fmtN(diff);
-  sd.className = 'metric-val ' + (Math.abs(diff)<1?'green':diff<0?'red':'amber');
-
-  document.getElementById('ss-open').innerHTML    = fmt(open);
-  document.getElementById('ss-cash').innerHTML    = fmt(cash);
-  document.getElementById('ss-digital').innerHTML = fmt(digital);
-  document.getElementById('ss-exp').innerHTML     = fmt(exp);
-  document.getElementById('ss-close').innerHTML   = fmt(close);
-
-  const cats = {};
-  S.expenses.forEach(e => { if(e.amt) cats[e.cat]=(cats[e.cat]||0)+(parseFloat(e.amt)||0); });
-  document.getElementById('sum-cats').innerHTML = Object.keys(cats).length
-    ? Object.entries(cats).map(([c,v])=>`<div class="sum-row"><span class="sl">${c}</span><span class="sv">${fmtN(v)}</span></div>`).join('')
-    : '<div class="sum-row"><span class="sl" style="opacity:.5">No expenses</span></div>';
-
-  document.getElementById('ss-notes').textContent = S.rec?.openingNotes || '—';
-}
-
-document.getElementById('btn-print').addEventListener('click', () => {
-  const open=S.rec?.openingCash||0, cash=S.rec?.cashSales||0, digital=S.rec?.digitalSales||0;
-  const exp=S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0), close=S.rec?.closingCash||0;
-  let txt=`SR SHOES — DAILY HISAB\nDate: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}\n${'─'.repeat(34)}\n`;
-  txt+=`Opening cash  : ${fmtN(open)}\nCash sales    : ${fmtN(cash)}\nUPI/Card      : ${fmtN(digital)}\nTotal sales   : ${fmtN(cash+digital)}\nExpenses      : ${fmtN(exp)}\nClosing cash  : ${fmtN(close)}\n${'─'.repeat(34)}\n`;
-  if(S.expenses.length){txt+='\nExpenses:\n';S.expenses.forEach(e=>{if(e.amt)txt+=`  ${(e.cat||'').padEnd(14)} ${fmtN(e.amt)}\n`;});}
-  if(S.rec?.openingNotes)txt+=`\nNotes: ${S.rec.openingNotes}`;
-  const w=window.open('','_blank');
-  if(w){w.document.write(`<pre style="font-family:monospace;font-size:13px;padding:2rem">${txt}</pre>`);w.print();}
-});
 
 // ════════════════════════════════════════════════════
 // MONTHLY
