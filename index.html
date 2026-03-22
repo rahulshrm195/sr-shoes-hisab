@@ -319,6 +319,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 
   /* Two-column layout for opening/closing */
   .pc-two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start; }
+  .pc-three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.25rem; align-items:start; }
   .pc-full { grid-column:1/-1; }
 
   .card { padding:1rem 1.5rem; margin-bottom:.875rem; border-radius:14px; }
@@ -411,7 +412,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span></div>
   <div class="auth-sub">hisab.srshoe.in</div>
-  <div class="auth-ver">v1.2.0</div>
+  <div class="auth-ver">v1.2.1</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -434,7 +435,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.2.0</div>
+    <div class="topbar-ver">v1.2.1</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
 
@@ -567,9 +568,9 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 
     <!-- CLOSING -->
     <div class="section" id="section-closing">
-      <div class="pc-two-col">
+      <div class="pc-three-col">
 
-        <!-- Left: Closing count (first) -->
+        <!-- Col 1: Closing cash count -->
         <div class="card">
           <div class="card-title">Closing cash count</div>
           <div id="close-denoms"></div>
@@ -579,7 +580,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
           </div>
         </div>
 
-        <!-- Right: Sales + Recon + Actions -->
+        <!-- Col 2: Sales + Reconciliation -->
         <div>
           <div class="card">
             <div class="card-title">Sales entry</div>
@@ -600,7 +601,6 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
               <span style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--accent)" id="cash-sales-auto">&#8377;0</span>
             </div>
           </div>
-
           <div class="card">
             <div class="card-title">Reconciliation</div>
             <div class="recon-row"><span class="recon-lbl">Opening cash</span><span class="recon-val" id="r-open">&#8377;0</span></div>
@@ -610,7 +610,10 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <div class="recon-row"><span class="recon-lbl">Actual closing cash</span><span class="recon-val" id="r-actual">&#8377;0</span></div>
             <div class="diff-bar"><span class="diff-label">Difference</span><span class="diff-val" id="r-diff">&#8212;</span></div>
           </div>
+        </div>
 
+        <!-- Col 3: Taken home + Closed by + Save -->
+        <div>
           <div class="card">
             <div class="card-title">Amount taken home</div>
             <div class="sales-row" style="margin-bottom:0">
@@ -629,14 +632,12 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
               <span style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--accent)" id="r-tomorrow">&#8377;0</span>
             </div>
           </div>
-
           <div class="card">
             <div class="card-title">Closed by</div>
             <input type="text" id="closed-by" placeholder="Enter your name"
               style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;transition:border-color .2s;"
               onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
           </div>
-
           <button class="btn-save" id="btn-save-closing">Save &amp; close day</button>
         </div>
 
@@ -689,7 +690,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.0</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.1</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -712,7 +713,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.2.0 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-ver">v1.2.1 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
