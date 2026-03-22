@@ -904,7 +904,7 @@ async function boot() {
 
   renderExpenses();
   calcClosing();
-  updateSummary();
+  updateStatsBar();
   
   // Carry-forward banner
   const prev = S.rec?.expectedOpening;
@@ -992,7 +992,7 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('section-' + tab.dataset.tab).classList.add('active');
-    if (tab.dataset.tab === 'summary')   updateSummary();
+    if (tab.dataset.tab === 'summary')   updateStatsBar();
     if (tab.dataset.tab === 'monthly')   loadMonthly();
     if (tab.dataset.tab === 'settings')  loadUsers();
   });
@@ -1079,7 +1079,7 @@ function updExpTotal() {
   return t;
 }
 
-window.updExp = (id,f,v) => { const e=S.expenses.find(x=>x.id===id); if(e) e[f]=v; updExpTotal(); calcClosing(); updateStatusBar(); };
+window.updExp = (id,f,v) => { const e=S.expenses.find(x=>x.id===id); if(e) e[f]=v; updExpTotal(); calcClosing(); updateStatsBar(); };
 window.delExp = id => { S.expenses = S.expenses.filter(x=>x.id!==id); renderExpenses(); calcClosing(); };
 
 document.getElementById('btn-add-expense').addEventListener('click', () => {
