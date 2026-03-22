@@ -901,7 +901,6 @@ async function boot() {
   if (S.rec?.digitalSales != null) document.getElementById('digital-sales').value = S.rec.digitalSales;
   if (S.rec?.openingNotes) document.getElementById('opening-notes').value = S.rec.openingNotes;
   if (S.rec?.countedBy)   document.getElementById('counted-by').value   = S.rec.countedBy;
-  if (S.rec?.countedBy)   document.getElementById('counted-by').value   = S.rec.countedBy;
 
   renderExpenses();
   calcClosing();
@@ -923,6 +922,9 @@ async function boot() {
     document.getElementById('notif-bar').classList.add('show');
   }
   scheduleEOD();
+
+  // Update stats bar LAST — after all data, DOM, and role are ready
+  updateStatsBar();
 }
 
 async function loadRole() {
@@ -931,8 +933,6 @@ async function loadRole() {
     S.role = snap.exists ? (snap.data().role || 'staff') : 'staff';
   } catch(e) { S.role = 'staff'; }
   applyRole();
-  // Update stats bar here — after all data restored AND role applied
-  updateStatsBar();
 }
 
 function applyRole() {
