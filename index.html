@@ -317,6 +317,46 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 .exp-cat-row:last-child { border-bottom:none; }
 .exp-cat-bar { height:4px; background:var(--accent); border-radius:4px; margin-top:4px; opacity:.6; }
 
+/* ── Diff chart ── */
+.diff-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  position: relative;
+  cursor: pointer;
+}
+.diff-bar-pos {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  background: #86efac;
+  position: absolute;
+  bottom: 50%;
+  min-height: 2px;
+  transition: opacity .15s;
+}
+.diff-bar-neg {
+  width: 100%;
+  border-radius: 0 0 3px 3px;
+  background: #fca5a5;
+  position: absolute;
+  top: 50%;
+  min-height: 2px;
+  transition: opacity .15s;
+}
+.diff-bar-item:hover .diff-bar-pos,
+.diff-bar-item:hover .diff-bar-neg { opacity: .7; }
+
+/* ── Category list ── */
+.cat-item { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:.5px solid var(--border); font-size:.85rem; font-family:var(--mono); }
+.cat-item:last-child { border-bottom:none; }
+.cat-item-name { color:var(--text); }
+.cat-item-default { color:var(--hint); font-size:.7rem; margin-left:6px; }
+.cat-del { background:none; border:none; color:var(--hint); cursor:pointer; font-size:.85rem; padding:2px 6px; border-radius:4px; transition:color .15s; }
+.cat-del:hover { color:var(--red); }
+
 /* ── Changelog ── */
 .changelog { display:flex; flex-direction:column; gap:1rem; }
 .cl-entry { padding-bottom:1rem; border-bottom:.5px solid var(--border); }
@@ -446,7 +486,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.3.5</div>
+  <div class="auth-ver">v1.4.0</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -469,7 +509,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.3.5</div>
+    <div class="topbar-ver">v1.4.0</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -490,6 +530,11 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
     <div class="stat-item">
       <div class="stat-label">Opening status</div>
       <div class="stat-val" id="sb-status"><span class="sb-badge pending">Not saved</span></div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-label">Closing diff</div>
+      <div class="stat-val" id="sb-diff">&#8212;</div>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
@@ -796,6 +841,18 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
           <div class="chart-labels" id="monthly-labels"></div>
         </div>
         <div class="card">
+          <div class="card-title">Closing difference trend</div>
+          <div style="position:relative;height:80px;margin:12px 0 4px" id="diff-chart-wrap">
+            <div style="position:absolute;left:0;right:0;top:50%;height:1px;background:var(--border2);"></div>
+            <div style="display:flex;align-items:center;height:100%;gap:4px" id="diff-bars"></div>
+          </div>
+          <div class="chart-labels" id="diff-labels"></div>
+          <div style="display:flex;gap:16px;margin-top:8px;font-size:.68rem;font-family:var(--mono);color:var(--muted)">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#86efac;display:inline-block"></span>Over / Balanced</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fca5a5;display:inline-block"></span>Short</span>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-title">Day by day</div>
           <div class="report-table-wrap">
             <table class="report-table" id="sales-table">
@@ -867,10 +924,22 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.3.5</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.4.0</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
+
+      <div class="card" style="margin-top:.875rem" id="exp-categories-card">
+        <div class="card-title">Expense categories</div>
+        <div id="cat-list" style="margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="new-cat-input" placeholder="New category name"
+            style="flex:1;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:8px 12px;font-family:var(--mono);font-size:.85rem;color:var(--text);outline:none;transition:border-color .2s;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
+          <button class="btn-outline" id="btn-add-cat" style="font-size:.78rem;padding:8px 14px;color:var(--accent);border-color:var(--accent);white-space:nowrap">+ Add</button>
+        </div>
+        <div id="cat-error" style="font-size:.72rem;color:var(--red);font-family:var(--mono);margin-top:6px;min-height:1em"></div>
+      </div>
 
       <div class="card" style="margin-top:.875rem" id="users-card">
         <div class="card-title">App users</div>
@@ -889,6 +958,36 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.4.0 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Custom expense categories in Settings</div>
+            <div class="cl-item">&#10003; Owner can add and remove categories</div>
+            <div class="cl-item">&#10003; Categories saved to Firestore and shared across all staff</div>
+            <div class="cl-item">&#10003; Default categories always shown as reference</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.3.9 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Closing difference trend chart in Reports</div>
+            <div class="cl-item">&#10003; Green bars above zero line = over, red below = short</div>
+            <div class="cl-item">&#10003; Last 14 days visible at a glance</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.3.8 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Full changelog restored — all versions from v1.0.0</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.3.7 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Closing lock now correctly shows Edit button for owner</div>
+            <div class="cl-item">&#10003; Boot sequence fixed — role loaded before locks applied</div>
+            <div class="cl-item">&#10003; Closing difference added to stats bar</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.3.6 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Summary tab populates on page refresh</div>
+            <div class="cl-item">&#10003; EOD reminder time loads correctly from settings</div>
+            <div class="cl-item">&#10003; Mismatch reason restores after page refresh</div>
+            <div class="cl-item">&#10003; Closing fields restore correctly (takenHome fix)</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.3.5 <span class="cl-date">23 Mar 2026</span></div>
             <div class="cl-item">&#10003; Staff sees match/mismatch result AFTER opening is saved</div>
@@ -916,6 +1015,119 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
             <div class="cl-item">&#10003; Auto role registration on first login</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.3.0 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Stats bar fits all 4 items on mobile without scrolling</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.9 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Full Reports tab redesigned with Sales, Expenses, Opening</div>
+            <div class="cl-item">&#10003; Period selector: This Month / This Week / Custom Range</div>
+            <div class="cl-item">&#10003; App renamed to SR Shoes Hisab throughout</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.8 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Settings moved to gear icon in topbar</div>
+            <div class="cl-item">&#10003; Reports tab added (owner only)</div>
+            <div class="cl-item">&#10003; Staff sees 4 tabs, owner sees 5 tabs + gear</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.7 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Removed all debug console.log statements</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.6 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Notification status shown in Settings</div>
+            <div class="cl-item">&#10003; Enable notifications button in Settings</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.5 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fixed syntax error in print function</div>
+            <div class="cl-item">&#10003; Carry forward banner hides after opening saved</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.4 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Closing locks after save with confirmation dialog</div>
+            <div class="cl-item">&#10003; Summary tab rebuilt and working</div>
+            <div class="cl-item">&#10003; Print updated with all new closing fields</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.3 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Closing 3-column layout on PC</div>
+            <div class="cl-item">&#10003; Count | Sales+Recon | Taken home+Save</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.2 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Closing redesigned: Total sales, Phonepe, Card, auto cash</div>
+            <div class="cl-item">&#10003; Amount taken home subtracts from tomorrow's opening</div>
+            <div class="cl-item">&#10003; Closed by field added</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.1 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Opening locks after save — staff cannot edit</div>
+            <div class="cl-item">&#10003; Owner sees Edit opening button</div>
+            <div class="cl-item">&#10003; Staff counts blind before saving</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.2.0 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Compact opening page fits on one PC screen</div>
+            <div class="cl-item">&#10003; Sticky stats bar and nav tabs</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.1.9 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Expenses redesigned: one entry at a time</div>
+            <div class="cl-item">&#10003; Enter key flow: amount to description to save</div>
+            <div class="cl-item">&#10003; Delete any entry, running total updates live</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.1.8 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Role based access: staff and owner tabs</div>
+            <div class="cl-item">&#10003; User management in Settings</div>
+            <div class="cl-entry">
+            <div class="cl-ver">v1.1.7 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fixed Android PWA notifications via Service Worker</div>
+            <div class="cl-item">&#10003; Fixed EOD reminder notification</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.1.6 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Pure white and deep blue theme</div>
+            <div class="cl-item">&#10003; High contrast for store monitor</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.1.5 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Stats bar and nav tabs always visible while scrolling</div>
+            <div class="cl-item">&#10003; Persistent stats bar: opening, expenses, status, counted by</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.1.4 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Removed up/down arrows from number inputs</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.1.3 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Keyboard shortcuts Ctrl/Cmd + 1-6 to switch tabs</div>
+            <div class="cl-item">&#10003; Cash counted by field on opening</div>
+            <div class="cl-item">&#10003; Carry forward banner shows expected opening</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.1.2 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Desktop two-column layout for opening and closing</div>
+            <div class="cl-item">&#10003; Denomination inputs enlarged for store PC</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.1.1 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fixed JS crash on boot (updateSummary undefined)</div>
+            <div class="cl-item">&#10003; Stats bar now updates correctly on refresh</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.1.0 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Removed cash sales from stats bar</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.0.9 <span class="cl-date">22 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fresh rebuild on stable v1.0.9 base</div>
+            <div class="cl-item">&#10003; Notes + Coins denomination split</div>
+            <div class="cl-item">&#10003; Enter key login flow</div>
           </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.0.4 <span class="cl-date">21 Mar 2026</span></div>
@@ -991,7 +1203,8 @@ try { msg = firebase.messaging(); } catch(e) {}
 // ════════════════════════════════════════════════════
 const NOTES    = [500, 200, 100, 50, 20, 10];
 const COINS    = [20, 10, 5, 2, 1];
-const EXP_CATS = ['Rent','Electricity','Staff wages','Packaging','Transport','Repairs','Miscellaneous','Other'];
+const DEFAULT_CATS = ['Rent','Electricity','Staff wages','Packaging','Transport','Repairs','Miscellaneous','Other'];
+let EXP_CATS = [...DEFAULT_CATS];
 const STORE_ID = 'sr-shoes-main'; // shared store — all staff see same data
 
 // ════════════════════════════════════════════════════
@@ -1181,7 +1394,16 @@ async function boot() {
   // Load settings
   try {
     const snap = await db.collection('settings').doc(STORE_ID).get();
-    if (snap.exists) S.settings = snap.data();
+    if (snap.exists) {
+      S.settings = snap.data();
+      // Apply settings to UI
+      if (S.settings.eodTime) document.getElementById('eod-time').value = S.settings.eodTime;
+      if (S.settings.lowCashAlert) document.getElementById('low-cash').value = S.settings.lowCashAlert;
+      // Load custom expense categories
+      if (S.settings.expenseCategories?.length) {
+        EXP_CATS = S.settings.expenseCategories;
+      }
+    }
   } catch(e) {}
 
   // Load today's record
@@ -1203,10 +1425,11 @@ async function boot() {
   if (S.rec?.totalSales != null)  document.getElementById('total-sales').value   = S.rec.totalSales;
   if (S.rec?.phonepe != null)     document.getElementById('phonepe-sales').value  = S.rec.phonepe;
   if (S.rec?.cardSales != null)   document.getElementById('card-sales').value     = S.rec.cardSales;
-  if (S.rec?.takenHome)           document.getElementById('taken-home').value     = S.rec.takenHome;
+  if (S.rec?.takenHome != null)   document.getElementById('taken-home').value     = S.rec.takenHome;
   if (S.rec?.closedBy)            document.getElementById('closed-by').value      = S.rec.closedBy;
-  if (S.rec?.openingNotes) document.getElementById('opening-notes').value = S.rec.openingNotes;
-  if (S.rec?.countedBy)   document.getElementById('counted-by').value   = S.rec.countedBy;
+  if (S.rec?.openingNotes)    document.getElementById('opening-notes').value  = S.rec.openingNotes;
+  if (S.rec?.countedBy)       document.getElementById('counted-by').value    = S.rec.countedBy;
+  if (S.rec?.mismatchReason)  document.getElementById('mismatch-reason').value = S.rec.mismatchReason;
 
   renderExpenses();
   calcClosing();
@@ -1221,7 +1444,7 @@ async function boot() {
     calcOpening();
   }
 
-  // Load role for this user
+  // Load role FIRST so locks know owner vs staff
   await loadRole();
 
   // Notifications
@@ -1232,6 +1455,9 @@ async function boot() {
 
   // Update stats bar LAST — after all data, DOM, and role are ready
   updateStatsBar();
+
+  // Update summary tab data so it's ready when user clicks it
+  updateSummaryTab();
 
   // Lock opening LAST — after role is known so edit button shows correctly
   if (S.rec?.openingTime) {
@@ -1256,6 +1482,11 @@ function applyRole() {
   // Reports tab — owner only
   const reportsTab = document.getElementById('tab-reports');
   if (reportsTab) reportsTab.style.display = isOwner ? '' : 'none';
+  // Categories and users cards — owner only
+  const catCard   = document.getElementById('exp-categories-card');
+  const usersCard = document.getElementById('users-card');
+  if (catCard)   catCard.style.display   = isOwner ? '' : 'none';
+  if (usersCard) usersCard.style.display = isOwner ? '' : 'none';
   // Gear icon — show for all (settings available to all but user management owner only)
   // If staff on a hidden section, redirect to opening
   if (!isOwner) {
@@ -1717,6 +1948,30 @@ function renderSalesReport(recs) {
   const vals=days.map(d=>byday[d]?.totalSales||0), maxV=Math.max(...vals,1);
   const bars=document.getElementById('monthly-bars'); if(bars) bars.innerHTML=vals.map((v,i)=>'<div class="chart-bar" style="height:'+Math.max(4,Math.round(v/maxV*76))+'px" title="'+days[i]+': '+fmtN(v)+'"></div>').join('');
   const lbls=document.getElementById('monthly-labels'); if(lbls) lbls.innerHTML=days.map((d,i)=>'<span>'+(i%2===0?d.slice(8):'')+'</span>').join('');
+  // ── Diff trend chart ──────────────────────────────────────────────────────
+  const diffBars  = document.getElementById('diff-bars');
+  const diffLabels = document.getElementById('diff-labels');
+  if (diffBars && diffLabels) {
+    const diffDays = []; for(let i=13;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);diffDays.push(dateKey(dt));}
+    const diffs = diffDays.map(d => {
+      const r = byday[d];
+      if (!r?.closingCash) return null;
+      return (r.closingCash||0) - ((r.openingCash||0) + (r.cashSales||0) - (r.expenseTotal||0));
+    });
+    const maxAbs = Math.max(...diffs.filter(d=>d!=null).map(d=>Math.abs(d)), 1);
+    diffBars.innerHTML = diffs.map((d, i) => {
+      if (d === null) return '<div class="diff-bar-item" title="No data"></div>';
+      const pct = Math.round(Math.abs(d) / maxAbs * 45);
+      const isPos = d >= 0;
+      const label = Math.abs(d) < 1 ? 'Balanced' : (d>0?'+':'')+fmtN(d);
+      return '<div class="diff-bar-item" title="' + diffDays[i] + ': ' + label + '">' +
+        (isPos ? '<div class="diff-bar-pos" style="height:' + pct + 'px"></div>' :
+                 '<div class="diff-bar-neg" style="height:' + pct + 'px"></div>') +
+        '</div>';
+    }).join('');
+    diffLabels.innerHTML = diffDays.map((d,i) => '<span>' + (i%2===0?d.slice(8):'') + '</span>').join('');
+  }
+
   const tbody=document.getElementById('sales-table-body'); if(!tbody) return;
   tbody.innerHTML = closed.length ? closed.map(r => {
     const diff=(r.closingCash||0)-((r.openingCash||0)+(r.cashSales||0)-(r.expenseTotal||0));
@@ -1858,6 +2113,52 @@ document.getElementById('btn-request-notif')?.addEventListener('click', async ()
   }
 });
 
+// ── Expense category management ──────────────────────────
+function renderCatList() {
+  const list = document.getElementById('cat-list');
+  if (!list) return;
+  list.innerHTML = EXP_CATS.map((cat, i) => {
+    const isDefault = DEFAULT_CATS.includes(cat);
+    return '<div class="cat-item">' +
+      '<span class="cat-item-name">' + cat +
+        (isDefault ? '<span class="cat-item-default">default</span>' : '') +
+      '</span>' +
+      '<button class="cat-del" onclick="deleteCat(' + i + ')" title="Delete">' +
+        (EXP_CATS.length > 1 ? '&#x2715;' : '') +
+      '</button>' +
+    '</div>';
+  }).join('');
+}
+
+window.deleteCat = async (i) => {
+  if (EXP_CATS.length <= 1) return;
+  const cat = EXP_CATS[i];
+  EXP_CATS.splice(i, 1);
+  await db.collection('settings').doc(STORE_ID).set({ expenseCategories: EXP_CATS }, { merge: true });
+  renderCatList();
+  showToast(cat + ' removed');
+};
+
+document.getElementById('btn-add-cat')?.addEventListener('click', async () => {
+  const input = document.getElementById('new-cat-input');
+  const err   = document.getElementById('cat-error');
+  const name  = input.value.trim();
+  err.textContent = '';
+  if (!name) { err.textContent = 'Enter a category name.'; return; }
+  if (EXP_CATS.map(c=>c.toLowerCase()).includes(name.toLowerCase())) {
+    err.textContent = 'Category already exists.'; return;
+  }
+  EXP_CATS.push(name);
+  await db.collection('settings').doc(STORE_ID).set({ expenseCategories: EXP_CATS }, { merge: true });
+  input.value = '';
+  renderCatList();
+  showToast(name + ' added');
+});
+
+document.getElementById('new-cat-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-add-cat').click();
+});
+
 document.getElementById('btn-save-settings').addEventListener('click', async () => {
   S.settings = { eodTime: document.getElementById('eod-time').value, lowCashAlert: parseFloat(document.getElementById('low-cash').value)||500 };
   await db.collection('settings').doc(STORE_ID).set(S.settings, {merge:true});
@@ -1920,6 +2221,7 @@ document.getElementById('topbar-gear').addEventListener('click', () => {
     settingsSection.classList.add('active');
     loadUsers();
     updateNotifStatus();
+    renderCatList();
   } else {
     gear.classList.remove('active');
     // Restore opening tab
