@@ -446,7 +446,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.3.3</div>
+  <div class="auth-ver">v1.3.5</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -469,7 +469,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.3.3</div>
+    <div class="topbar-ver">v1.3.5</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -867,7 +867,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.3.3</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.3.5</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -889,6 +889,18 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.3.5 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Staff sees match/mismatch result AFTER opening is saved</div>
+            <div class="cl-item">&#10003; Before saving: counts blind (no expected shown)</div>
+            <div class="cl-item">&#10003; After saving: carry banner reveals result to all</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.3.4 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Carry forward banner hidden from staff (owner only)</div>
+            <div class="cl-item">&#10003; Staff counts blind — prevents manipulation of opening count</div>
+            <div class="cl-item">&#10003; Match/mismatch badge only visible to owner</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.3.3 <span class="cl-date">23 Mar 2026</span></div>
             <div class="cl-item">&#10003; Fixed syntax error in email summary (spread operator)</div>
@@ -1200,9 +1212,10 @@ async function boot() {
   calcClosing();
   updateStatsBar();
   
-  // Carry-forward banner — only show if opening not yet saved today
+  // Carry-forward banner — only show to owner, and only if opening not yet saved
+  // Staff should count blind to prevent manipulation
   const prev = S.rec?.expectedOpening;
-  if (prev != null && !S.rec?.openingTime) {
+  if (prev != null && !S.rec?.openingTime && S.role === 'owner') {
     document.getElementById('carry-expected-val').innerHTML = fmt(prev);
     document.getElementById('carry-banner').style.display = 'flex';
     calcOpening();
@@ -1315,6 +1328,13 @@ function lockOpening() {
   // Show edit button only for owner
   const editBtn = document.getElementById('btn-edit-opening');
   if (editBtn) editBtn.style.display = S.role === 'owner' ? 'block' : 'none';
+  // After locking — show carry banner to ALL roles so staff sees the result
+  const prev = S.rec?.expectedOpening;
+  if (prev != null) {
+    document.getElementById('carry-expected-val').innerHTML = fmt(prev);
+    document.getElementById('carry-banner').style.display = 'flex';
+    calcOpening();
+  }
 }
 
 function unlockOpening() {
@@ -1339,12 +1359,16 @@ function unlockOpening() {
 function calcOpening() {
   const total = getDenomTotal('open-denoms');
   document.getElementById('opening-total').innerHTML = fmt(total);
+  // Only show carry badge to owner BEFORE saving — staff counts blind
+  // After opening is locked, banner is shown separately via lockOpening()
+  const isLocked = document.getElementById('btn-save-opening')?.style.display === 'none';
+  if (S.role !== 'owner' && !isLocked) return;
   const prev  = S.rec?.expectedOpening;
   const badge = document.getElementById('carry-badge');
   const mr    = document.getElementById('mismatch-row');
   if (prev != null && total > 0) {
     const diff = total - prev;
-    if (Math.abs(diff) < 1) { badge.textContent = 'Match ✓'; badge.className = 'carry-badge match'; }
+    if (Math.abs(diff) < 1) { badge.textContent = 'Match'; badge.className = 'carry-badge match'; }
     else { badge.textContent = diff > 0 ? 'Over ' + fmtN(diff) : 'Short ' + fmtN(Math.abs(diff)); badge.className = 'carry-badge mismatch'; }
     mr.style.display = Math.abs(diff) >= 1 ? 'block' : 'none';
   } else {
