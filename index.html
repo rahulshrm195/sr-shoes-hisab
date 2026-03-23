@@ -486,7 +486,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.4.3</div>
+  <div class="auth-ver">v1.5.0</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -509,7 +509,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.4.3</div>
+    <div class="topbar-ver">v1.5.0</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -545,7 +545,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 
   <nav class="nav-tabs">
     <button class="nav-tab active" data-tab="opening">Opening</button>
-    <button class="nav-tab" data-tab="expenses">Expenses</button>
+    <button class="nav-tab" data-tab="expenses">Day Entries</button>
     <button class="nav-tab" data-tab="closing">Closing</button>
     <button class="nav-tab" data-tab="summary">Summary</button>
     <button class="nav-tab" data-tab="reports" id="tab-reports" style="display:none">Reports</button>
@@ -597,14 +597,22 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
     </div>
 
-    <!-- EXPENSES -->
+    <!-- EXPENSES / DAY ENTRIES -->
     <div class="section" id="section-expenses">
       <div class="pc-two-col">
 
         <!-- Entry form -->
         <div>
+          <!-- Sub-tab selector -->
+          <div style="display:flex;gap:0;margin-bottom:1rem;border-bottom:1.5px solid var(--border2);">
+            <button class="report-subtab active" id="entry-tab-out" onclick="switchEntryTab('out')">Cash Out</button>
+            <button class="report-subtab" id="entry-tab-in" onclick="switchEntryTab('in')">Cash In</button>
+          </div>
+
+          <!-- Cash Out form -->
+          <div id="entry-form-out">
           <div class="card">
-            <div class="card-title">Add expense</div>
+            <div class="card-title">Add cash out entry</div>
             <div style="margin-bottom:12px">
               <label class="field-label">Amount (&#8377;)</label>
               <input type="number" id="exp-amt" placeholder="0" inputmode="numeric"
@@ -623,21 +631,63 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
                 style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;cursor:pointer;">
               </select>
             </div>
-            <button class="btn-save" id="btn-save-one-expense" style="margin-top:0">Save expense</button>
+            <button class="btn-save" id="btn-save-one-expense" style="margin-top:0">Save cash out</button>
             <div id="exp-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);margin-top:8px;min-height:1em"></div>
           </div>
+          </div><!-- end entry-form-out -->
+
+          <!-- Cash In form -->
+          <div id="entry-form-in" style="display:none">
+          <div class="card">
+            <div class="card-title">Add cash in entry</div>
+            <div style="margin-bottom:12px">
+              <label class="field-label">Amount (&#8377;)</label>
+              <input type="number" id="cashin-amt" placeholder="0" inputmode="numeric"
+                style="width:100%;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);padding:12px 14px;font-family:var(--mono);font-size:1.4rem;font-weight:600;color:var(--text);outline:none;transition:border-color .2s;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
+            </div>
+            <div style="margin-bottom:12px">
+              <label class="field-label">Description</label>
+              <input type="text" id="cashin-desc" placeholder="e.g. Maid paid back, Brother added change"
+                style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;transition:border-color .2s;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
+            </div>
+            <div style="margin-bottom:16px">
+              <label class="field-label">Category</label>
+              <select id="cashin-cat"
+                style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;cursor:pointer;">
+                <option>Debtor received</option>
+                <option>Cash added</option>
+                <option>Other income</option>
+              </select>
+            </div>
+            <button class="btn-save" id="btn-save-one-cashin" style="margin-top:0;background:var(--green)">Save cash in</button>
+            <div id="cashin-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);margin-top:8px;min-height:1em"></div>
+          </div>
+          </div><!-- end entry-form-in -->
+
         </div>
 
         <!-- Today's list -->
         <div>
           <div class="card">
-            <div class="card-title">Today's expenses</div>
+            <div class="card-title">Cash out today</div>
             <div id="exp-today-list">
-              <div style="font-size:.82rem;font-family:var(--mono);color:var(--hint);padding:8px 0">No expenses yet</div>
+              <div style="font-size:.82rem;font-family:var(--mono);color:var(--hint);padding:8px 0">No entries yet</div>
             </div>
             <div class="total-row">
-              <span class="total-label">Total expenses today</span>
+              <span class="total-label">Total cash out</span>
               <span class="total-val" id="exp-total">&#8377;0</span>
+            </div>
+          </div>
+          <div class="card" style="margin-top:.875rem">
+            <div class="card-title" style="color:var(--green)">Cash in today</div>
+            <div id="cashin-today-list">
+              <div style="font-size:.82rem;font-family:var(--mono);color:var(--hint);padding:8px 0">No entries yet</div>
+            </div>
+            <div class="total-row">
+              <span class="total-label">Total cash in</span>
+              <span class="total-val" style="color:var(--green)" id="cashin-total">&#8377;0</span>
             </div>
           </div>
         </div>
@@ -698,7 +748,8 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <div class="card-title">Reconciliation</div>
             <div class="recon-row"><span class="recon-lbl">Opening cash</span><span class="recon-val" id="r-open">&#8377;0</span></div>
             <div class="recon-row"><span class="recon-lbl">+ Cash sales (auto)</span><span class="recon-val" id="r-cashsales">&#8377;0</span></div>
-            <div class="recon-row"><span class="recon-lbl">&#8722; Expenses</span><span class="recon-val" id="r-expenses">&#8377;0</span></div>
+            <div class="recon-row"><span class="recon-lbl">+ Cash in</span><span class="recon-val" style="color:var(--green)" id="r-cashin">&#8377;0</span></div>
+            <div class="recon-row"><span class="recon-lbl">&#8722; Cash out</span><span class="recon-val" id="r-expenses">&#8377;0</span></div>
             <div class="recon-row"><span class="recon-lbl">= Expected closing</span><span class="recon-val" id="r-expected">&#8377;0</span></div>
             <div class="recon-row"><span class="recon-lbl">Actual closing cash</span><span class="recon-val" id="r-actual">&#8377;0</span></div>
             <div class="diff-bar"><span class="diff-label">Difference</span><span class="diff-val" id="r-diff">&#8212;</span></div>
@@ -924,7 +975,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.4.3</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.5.0</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -958,6 +1009,14 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.5.0 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Expenses tab renamed to Day Entries</div>
+            <div class="cl-item">&#10003; Cash Out section (expenses + credit sales)</div>
+            <div class="cl-item">&#10003; Cash In section (debtor received, cash added, other income)</div>
+            <div class="cl-item">&#10003; Reconciliation updated: Opening + Cash sales + Cash In - Cash Out</div>
+            <div class="cl-item">&#10003; Staff adds entries, only owner can delete</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.4.3 <span class="cl-date">23 Mar 2026</span></div>
             <div class="cl-item">&#10003; Fixed denomination counts resetting on re-save</div>
@@ -1223,6 +1282,7 @@ const NOTES    = [500, 200, 100, 50, 20, 10];
 const COINS    = [20, 10, 5, 2, 1];
 const DEFAULT_CATS = ['Rent','Electricity','Staff wages','Packaging','Transport','Repairs','Miscellaneous','Other'];
 let EXP_CATS = [...DEFAULT_CATS];
+const CASHIN_CATS = ['Debtor received','Cash added','Other income'];
 const STORE_ID = 'sr-shoes-main'; // shared store — all staff see same data
 
 // ════════════════════════════════════════════════════
@@ -1235,6 +1295,8 @@ let S = {
   rec: null,       // today's register record
   expenses: [],
   expId: 0,
+  cashIn: [],
+  cashInId: 0,
   settings: { eodTime: '20:00', lowCashAlert: 500 },
 };
 
@@ -1431,6 +1493,8 @@ async function boot() {
       S.rec      = rec;
       S.expenses = rec.expenses || [];
       S.expId    = S.expenses.length;
+      S.cashIn   = rec.cashIn   || [];
+      S.cashInId = S.cashIn.length;
     }
   } catch(e) { console.warn('Load error:', e); }
 
@@ -1521,7 +1585,8 @@ function applyRole() {
 function updateStatsBar() {
   
   const openCash  = S.rec?.openingCash;
-  const expTotal  = S.expenses.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
+  const expTotal   = S.expenses.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
+  const cashInTot  = S.cashIn.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
   const countedBy = S.rec?.countedBy || document.getElementById('counted-by')?.value?.trim() || '';
   const isSaved   = !!S.rec?.openingTime;
 
@@ -1668,7 +1733,79 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
 // EXPENSES
 // ════════════════════════════════════════════════════
 function renderExpenses() {
-  // Init category dropdown
+  // Switch between Cash Out and Cash In tabs
+function switchEntryTab(tab) {
+  document.getElementById('entry-form-out').style.display = tab === 'out' ? 'block' : 'none';
+  document.getElementById('entry-form-in').style.display  = tab === 'in'  ? 'block' : 'none';
+  document.getElementById('entry-tab-out').classList.toggle('active', tab === 'out');
+  document.getElementById('entry-tab-in').classList.toggle('active', tab === 'in');
+}
+
+// Render Cash In list
+function renderCashIn() {
+  const list = document.getElementById('cashin-today-list');
+  if (!list) return;
+  if (!S.cashIn.length) {
+    list.innerHTML = '<div style="font-size:.82rem;font-family:var(--mono);color:var(--hint);padding:8px 0">No entries yet</div>';
+    document.getElementById('cashin-total').innerHTML = fmt(0);
+    updateStatsBar(); return;
+  }
+  list.innerHTML = S.cashIn.map(e =>
+    '<div class="exp-today-row">' +
+      '<div class="exp-today-left">' +
+        '<div class="exp-today-desc">' + (e.desc||'—') + '</div>' +
+        '<div class="exp-today-cat" style="color:var(--green)">' + e.cat + '</div>' +
+      '</div>' +
+      '<div class="exp-today-amt" style="color:var(--green)">+' + fmtN(parseFloat(e.amt)||0) + '</div>' +
+      (S.role === 'owner' ? '<button class="exp-today-del" onclick="delCashIn(' + e.id + ')">&#x2715;</button>' : '') +
+    '</div>'
+  ).join('');
+  const total = S.cashIn.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  document.getElementById('cashin-total').innerHTML = fmt(total);
+  updateStatsBar();
+}
+
+window.delCashIn = async id => {
+  if (S.role !== 'owner') return;
+  S.cashIn = S.cashIn.filter(x=>x.id!==id);
+  try { await saveRec({date:S.today,cashIn:S.cashIn}); renderCashIn(); calcClosing(); showToast('Entry removed'); }
+  catch(e) { showToast('Error: '+e.message); }
+};
+
+document.getElementById('btn-save-one-cashin')?.addEventListener('click', async () => {
+  const amt=parseFloat(document.getElementById('cashin-amt').value)||0;
+  const desc=document.getElementById('cashin-desc').value.trim();
+  const cat=document.getElementById('cashin-cat').value;
+  const err=document.getElementById('cashin-error');
+  err.textContent='';
+  if(!amt||amt<=0){err.textContent='Enter a valid amount.';return;}
+  S.cashIn.push({id:S.cashInId++,amt,desc,cat});
+  const btn=document.getElementById('btn-save-one-cashin');
+  btn.disabled=true; btn.textContent='Saving...';
+  try {
+    await saveRec({date:S.today,cashIn:S.cashIn});
+    document.getElementById('cashin-amt').value='';
+    document.getElementById('cashin-desc').value='';
+    document.getElementById('cashin-cat').selectedIndex=0;
+    document.getElementById('cashin-amt').focus();
+    renderCashIn(); calcClosing();
+    btn.textContent='Saved'; btn.classList.add('saved');
+    setTimeout(()=>{btn.textContent='Save cash in';btn.classList.remove('saved');btn.disabled=false;},1500);
+    showToast(cat+(desc?': '+desc:'')+' +'+fmtN(amt));
+    if('Notification' in window&&Notification.permission==='granted'&&'serviceWorker' in navigator){
+      navigator.serviceWorker.ready.then(reg=>{reg.showNotification('SR Shoes - Cash In',{body:cat+(desc?': '+desc:'')+' +'+fmtN(amt),icon:'/icon-192.png',badge:'/icon-192.png',tag:'cashin-'+Date.now(),vibrate:[100,50,100]});});
+    }
+  } catch(e) {
+    S.cashIn.pop();
+    err.textContent='Error: '+e.message;
+    btn.disabled=false; btn.textContent='Save cash in';
+  }
+});
+
+document.getElementById('cashin-amt')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('cashin-desc').focus();});
+document.getElementById('cashin-desc')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-save-one-cashin').click();});
+
+// Init category dropdown
   const sel = document.getElementById('exp-cat');
   if (sel && sel.options.length === 0) {
     EXP_CATS.forEach(c => { const o = document.createElement('option'); o.textContent = c; sel.appendChild(o); });
@@ -1694,6 +1831,7 @@ function renderExpenses() {
   const total = S.expenses.reduce((s,e) => s+(parseFloat(e.amt)||0), 0);
   document.getElementById('exp-total').innerHTML = fmt(total);
   updateStatsBar();
+  renderCashIn();
 }
 
 window.delExp = async id => {
@@ -1786,8 +1924,9 @@ function calcClosing() {
   const cashSale   = Math.max(0, totalSales - phonepe - card);
   const takenHome  = parseFloat(document.getElementById('taken-home')?.value)||0;
   const expTotal   = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const cashInTotal= S.cashIn.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
   const openCash   = S.rec?.openingCash || getDenomTotal('open-denoms');
-  const expected   = openCash + cashSale - expTotal;
+  const expected   = openCash + cashSale + cashInTotal - expTotal;
   const diff       = close - expected;
   const tomorrow   = close - takenHome;
 
@@ -1798,6 +1937,7 @@ function calcClosing() {
   document.getElementById('closing-total').innerHTML = fmt(close);
   document.getElementById('r-open').innerHTML        = fmt(openCash);
   document.getElementById('r-cashsales').innerHTML   = fmt(cashSale);
+  const rci = document.getElementById('r-cashin'); if(rci) rci.innerHTML = fmt(cashInTotal);
   document.getElementById('r-expenses').innerHTML    = fmt(expTotal);
   document.getElementById('r-expected').innerHTML    = fmt(expected);
   document.getElementById('r-actual').innerHTML      = fmt(close);
@@ -1848,7 +1988,8 @@ document.getElementById('btn-confirm-close-ok').addEventListener('click', async 
     const cashSales  = Math.max(0, totalSales - phonepe - card);
     const takenHome  = parseFloat(document.getElementById('taken-home').value)||0;
     const closedBy   = document.getElementById('closed-by').value.trim();
-    const expTotal   = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+    const expTotal    = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+    const cashInTotal = S.cashIn.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
     const tomorrowOpening = closeCash - takenHome;
     const data = {
       date: S.today,
@@ -1857,6 +1998,7 @@ document.getElementById('btn-confirm-close-ok').addEventListener('click', async 
       totalSales, phonepe, cardSales: card,
       cashSales, takenHome, closedBy,
       expenseTotal: expTotal,
+      cashInTotal,
       closingTime: new Date().toISOString(),
       expectedOpening: tomorrowOpening
     };
