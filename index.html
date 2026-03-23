@@ -288,6 +288,26 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 .exp-today-del  { background:none; border:none; color:var(--hint); cursor:pointer; font-size:.85rem; padding:4px 6px; border-radius:6px; transition:color .15s; flex-shrink:0; }
 .exp-today-del:hover { color:var(--red); }
 
+/* ── Reports ── */
+.report-period-bar { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; }
+.report-period-btn { background:var(--bg3); border:.5px solid var(--border2); border-radius:var(--r); padding:7px 16px; font-family:var(--mono); font-size:.78rem; color:var(--muted); cursor:pointer; transition:all .15s; }
+.report-period-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
+.report-subtabs { display:flex; gap:0; margin-bottom:.875rem; border-bottom:1.5px solid var(--border2); }
+.report-subtab { background:none; border:none; border-bottom:2px solid transparent; padding:8px 18px 7px; font-family:var(--mono); font-size:.75rem; color:var(--muted); cursor:pointer; letter-spacing:.06em; text-transform:uppercase; transition:all .15s; margin-bottom:-1.5px; }
+.report-subtab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+.report-table-wrap { overflow-x:auto; }
+.report-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:.78rem; }
+.report-table th { text-align:left; padding:8px 10px; font-size:.65rem; color:var(--accent); letter-spacing:.08em; text-transform:uppercase; border-bottom:1.5px solid var(--border2); white-space:nowrap; font-weight:600; }
+.report-table td { padding:8px 10px; border-bottom:.5px solid var(--border); color:var(--text); white-space:nowrap; }
+.report-table tr:last-child td { border-bottom:none; }
+.report-table tr:hover td { background:var(--bg3); }
+.report-table .balanced { color:var(--green); }
+.report-table .short { color:var(--red); }
+.report-table .over { color:var(--blue); }
+.exp-cat-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:.5px solid var(--border); font-size:.82rem; }
+.exp-cat-row:last-child { border-bottom:none; }
+.exp-cat-bar { height:4px; background:var(--accent); border-radius:4px; margin-top:4px; opacity:.6; }
+
 /* ── Changelog ── */
 .changelog { display:flex; flex-direction:column; gap:1rem; }
 .cl-entry { padding-bottom:1rem; border-bottom:.5px solid var(--border); }
@@ -415,9 +435,9 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 
 <!-- AUTH -->
 <div id="auth-screen">
-  <div class="auth-logo">SR <span>Shoes</span></div>
-  <div class="auth-sub">hisab.srshoe.in</div>
-  <div class="auth-ver">v1.2.8</div>
+  <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
+  <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
+  <div class="auth-ver">v1.2.9</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -438,9 +458,9 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <!-- Always-visible status bar -->
   
   <div class="topbar">
-    <div class="topbar-logo">SR <span>Shoes</span></div>
+    <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.2.8</div>
+    <div class="topbar-ver">v1.2.9</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -711,19 +731,108 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 
     <!-- MONTHLY -->
     <div class="section" id="section-reports">
-      <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
-        <div class="metric"><div class="metric-lbl">Month sales</div><div class="metric-val amber" id="m-sales">&#8212;</div></div>
-        <div class="metric"><div class="metric-lbl">Month exp</div><div class="metric-val" id="m-exp">&#8212;</div></div>
-        <div class="metric"><div class="metric-lbl">Net</div><div class="metric-val green" id="m-net">&#8212;</div></div>
-        <div class="metric"><div class="metric-lbl">Days</div><div class="metric-val" id="m-days">&#8212;</div></div>
+
+      <!-- Period selector -->
+      <div class="report-period-bar">
+        <button class="report-period-btn active" data-period="month">This Month</button>
+        <button class="report-period-btn" data-period="week">This Week</button>
+        <button class="report-period-btn" data-period="custom">Custom Range</button>
       </div>
-      <div class="card">
-        <div class="card-title">Sales &#8212; last 14 days</div>
-        <div class="chart-bar-wrap" id="monthly-bars"></div>
-        <div class="chart-labels" id="monthly-labels"></div>
+
+      <!-- Custom date range -->
+      <div id="report-custom-range" style="display:none" class="card" style="margin-bottom:.875rem">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div>
+            <label class="field-label">From</label>
+            <input type="date" id="report-from" style="background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:8px 12px;font-family:var(--mono);font-size:.85rem;color:var(--text);outline:none;">
+          </div>
+          <div>
+            <label class="field-label">To</label>
+            <input type="date" id="report-to" style="background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:8px 12px;font-family:var(--mono);font-size:.85rem;color:var(--text);outline:none;">
+          </div>
+          <div style="margin-top:20px">
+            <button class="btn-save" id="btn-load-custom" style="margin-top:0;padding:9px 20px;font-size:.85rem">Load</button>
+          </div>
+        </div>
       </div>
-      <div class="card"><div class="card-title">This month</div><div id="monthly-list"></div></div>
+
+      <!-- Report sub-tabs -->
+      <div class="report-subtabs">
+        <button class="report-subtab active" data-subtab="sales">Sales</button>
+        <button class="report-subtab" data-subtab="expenses">Expenses</button>
+        <button class="report-subtab" data-subtab="opening">Opening</button>
+      </div>
+
       <div class="spinner" id="monthly-spinner" style="display:none"></div>
+
+      <!-- SALES SUB-TAB -->
+      <div id="report-sales" class="report-subtab-content">
+        <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-top:.875rem">
+          <div class="metric"><div class="metric-lbl">Total sales</div><div class="metric-val amber" id="m-sales">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Phonepe</div><div class="metric-val" id="m-phonepe">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Card</div><div class="metric-val" id="m-card">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Cash sales</div><div class="metric-val" id="m-cash">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Net</div><div class="metric-val green" id="m-net">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Days</div><div class="metric-val" id="m-days">&#8212;</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Sales trend</div>
+          <div class="chart-bar-wrap" id="monthly-bars"></div>
+          <div class="chart-labels" id="monthly-labels"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Day by day</div>
+          <div class="report-table-wrap">
+            <table class="report-table" id="sales-table">
+              <thead><tr>
+                <th>Date</th><th>Total</th><th>Phonepe</th><th>Card</th><th>Cash</th><th>Exp</th><th>Net</th><th>Status</th><th>Closed by</th>
+              </tr></thead>
+              <tbody id="sales-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXPENSES SUB-TAB -->
+      <div id="report-expenses" class="report-subtab-content" style="display:none">
+        <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-top:.875rem">
+          <div class="metric"><div class="metric-lbl">Total expenses</div><div class="metric-val red" id="m-exp">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Avg per day</div><div class="metric-val" id="m-exp-avg">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Days with exp</div><div class="metric-val" id="m-exp-days">&#8212;</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">By category</div>
+          <div id="report-exp-cats"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">All entries</div>
+          <div class="report-table-wrap">
+            <table class="report-table" id="exp-report-table">
+              <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+              <tbody id="exp-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- OPENING SUB-TAB -->
+      <div id="report-opening" class="report-subtab-content" style="display:none">
+        <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-top:.875rem">
+          <div class="metric"><div class="metric-lbl">Days opened</div><div class="metric-val" id="m-open-days">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Matched</div><div class="metric-val green" id="m-open-match">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Mismatched</div><div class="metric-val red" id="m-open-mismatch">&#8212;</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Day by day</div>
+          <div class="report-table-wrap">
+            <table class="report-table" id="opening-table">
+              <thead><tr><th>Date</th><th>Opening cash</th><th>Expected</th><th>Difference</th><th>Status</th><th>Counted by</th><th>Reason</th></tr></thead>
+              <tbody id="opening-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- SETTINGS -->
@@ -743,7 +852,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.8</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.2.9</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -766,7 +875,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.2.8 <span class="cl-date">21 Mar 2026</span></div>
+            <div class="cl-ver">v1.2.9 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
             <div class="cl-item">&#10003; Owner sees all tabs including Monthly and Settings</div>
             <div class="cl-item">&#10003; User management in Settings — add users, assign roles</div>
@@ -1305,7 +1414,7 @@ document.getElementById('btn-save-one-expense').addEventListener('click', async 
     showToast(cat + (desc ? ': ' + desc : '') + ' — ' + fmtN(amt));
     if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(reg => {
-        reg.showNotification('SR Shoes — Expense saved', {
+        reg.showNotification('SR Shoes Hisab — Expense saved', {
           body: cat + (desc ? ': ' + desc : '') + ' — ' + fmtN(amt),
           icon: '/icon-192.png', badge: '/icon-192.png',
           tag: 'expense-' + Date.now(), vibrate: [100, 50, 100]
@@ -1515,34 +1624,89 @@ document.getElementById('btn-print').addEventListener('click', () => {
 // ════════════════════════════════════════════════════
 // MONTHLY
 // ════════════════════════════════════════════════════
-async function loadMonthly() {
-  document.getElementById('monthly-spinner').style.display = 'block';
+// ── Report state ──────────────────────────────────────
+let R = { period: 'month', subtab: 'sales' };
+
+function getReportRange() {
   const now = new Date();
-  const from = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
-  const to   = dateKey();
+  if (R.period === 'month') {
+    return { from: now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-01', to: dateKey() };
+  }
+  if (R.period === 'week') {
+    const day = now.getDay() || 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - day + 1);
+    return { from: dateKey(mon), to: dateKey() };
+  }
+  return { from: document.getElementById('report-from')?.value || dateKey(), to: document.getElementById('report-to')?.value || dateKey() };
+}
+
+async function loadMonthly() {
+  const spinner = document.getElementById('monthly-spinner');
+  if (spinner) spinner.style.display = 'block';
+  const { from, to } = getReportRange();
   try {
     const recs = await loadRange(from, to);
-    document.getElementById('monthly-spinner').style.display = 'none';
-    let ts=0,te=0,td=0; const byday={};
-    recs.forEach(r => { if(!r.closingCash) return; ts+=r.totalSales||0; te+=r.expenseTotal||0; td++; byday[r.date]=r; });
-    document.getElementById('m-sales').innerHTML = fmt(ts);
-    document.getElementById('m-exp').innerHTML   = fmt(te);
-    document.getElementById('m-net').innerHTML   = fmt(ts-te);
-    document.getElementById('m-days').textContent= td;
-
-    const days=[]; for(let i=13;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);days.push(dateKey(dt));}
-    const vals=days.map(d=>byday[d]?.totalSales||0), maxV=Math.max(...vals,1);
-    document.getElementById('monthly-bars').innerHTML = vals.map((v,i)=>
-      `<div class="chart-bar" style="height:${Math.max(4,Math.round(v/maxV*76))}px" title="${days[i]}: ${fmtN(v)}"></div>`).join('');
-    document.getElementById('monthly-labels').innerHTML = days.map((d,i)=>
-      `<span>${i%2===0?d.slice(8):''}</span>`).join('');
-    document.getElementById('monthly-list').innerHTML = recs.filter(r=>r.closingCash).map(r=>
-      `<div class="sum-row"><span class="sl">${r.date}</span><span class="sv">${fmtN(r.totalSales||0)}</span><span style="color:var(--muted);font-family:var(--mono);font-size:.75rem;margin-left:8px">exp ${fmtN(r.expenseTotal||0)}</span></div>`
-    ).join('') || '<div class="sum-row"><span class="sl" style="opacity:.5">No records yet</span></div>';
+    if (spinner) spinner.style.display = 'none';
+    renderSalesReport(recs);
+    renderExpenseReport(recs);
+    renderOpeningReport(recs);
   } catch(e) {
-    document.getElementById('monthly-spinner').style.display = 'none';
-      showToast('Error: ' + e.message);
+    if (spinner) spinner.style.display = 'none';
+    showToast('Error: ' + e.message);
   }
+}
+
+function renderSalesReport(recs) {
+  const closed = recs.filter(r => r.closingCash);
+  let ts=0, tp=0, tc=0, tca=0, te=0;
+  closed.forEach(r => { ts+=r.totalSales||0; tp+=r.phonepe||0; tc+=r.cardSales||0; tca+=r.cashSales||0; te+=r.expenseTotal||0; });
+  const setEl = (id, v) => { const el=document.getElementById(id); if(el) el.innerHTML=v; };
+  setEl('m-sales', fmt(ts)); setEl('m-phonepe', fmt(tp)); setEl('m-card', fmt(tc));
+  setEl('m-cash', fmt(tca)); setEl('m-net', fmt(ts-te));
+  const md = document.getElementById('m-days'); if(md) md.textContent = closed.length;
+  const days=[]; for(let i=13;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);days.push(dateKey(dt));}
+  const byday={}; recs.forEach(r=>byday[r.date]=r);
+  const vals=days.map(d=>byday[d]?.totalSales||0), maxV=Math.max(...vals,1);
+  const bars=document.getElementById('monthly-bars'); if(bars) bars.innerHTML=vals.map((v,i)=>'<div class="chart-bar" style="height:'+Math.max(4,Math.round(v/maxV*76))+'px" title="'+days[i]+': '+fmtN(v)+'"></div>').join('');
+  const lbls=document.getElementById('monthly-labels'); if(lbls) lbls.innerHTML=days.map((d,i)=>'<span>'+(i%2===0?d.slice(8):'')+'</span>').join('');
+  const tbody=document.getElementById('sales-table-body'); if(!tbody) return;
+  tbody.innerHTML = closed.length ? closed.map(r => {
+    const diff=(r.closingCash||0)-((r.openingCash||0)+(r.cashSales||0)-(r.expenseTotal||0));
+    const dc=Math.abs(diff)<1?'balanced':diff>0?'over':'short';
+    const dt=new Date(r.date); const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+    return '<tr><td>'+lb+'</td><td>'+fmtN(r.totalSales||0)+'</td><td>'+fmtN(r.phonepe||0)+'</td><td>'+fmtN(r.cardSales||0)+'</td><td>'+fmtN(r.cashSales||0)+'</td><td>'+fmtN(r.expenseTotal||0)+'</td><td>'+fmtN((r.totalSales||0)-(r.expenseTotal||0))+'</td><td class="'+dc+'">'+(Math.abs(diff)<1?'Balanced':(diff>0?'+':'')+fmtN(diff))+'</td><td>'+(r.closedBy||'—')+'</td></tr>';
+  }).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:1rem">No records</td></tr>';
+}
+
+function renderExpenseReport(recs) {
+  const allExp=[]; let te=0; const catTotals={}; let dwe=0;
+  recs.forEach(r => {
+    if (!r.expenses?.length) return; dwe++;
+    r.expenses.forEach(e => { if(!e.amt) return; const amt=parseFloat(e.amt)||0; te+=amt; catTotals[e.cat]=(catTotals[e.cat]||0)+amt; allExp.push({date:r.date,cat:e.cat,desc:e.desc||'',amt}); });
+  });
+  const days=recs.filter(r=>r.closingCash).length||1;
+  const setEl=(id,v)=>{const el=document.getElementById(id);if(el)el.innerHTML=v;};
+  setEl('m-exp',fmt(te)); setEl('m-exp-avg',fmt(te/days));
+  const med=document.getElementById('m-exp-days'); if(med) med.textContent=dwe;
+  const sorted=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]); const maxCat=sorted[0]?.[1]||1;
+  const cats=document.getElementById('report-exp-cats');
+  if(cats) cats.innerHTML=sorted.length?sorted.map(([cat,amt])=>'<div class="exp-cat-row"><div><div>'+cat+'</div><div class="exp-cat-bar" style="width:'+Math.round(amt/maxCat*100)+'%"></div></div><div style="font-family:var(--mono);font-weight:600">'+fmtN(amt)+'</div></div>').join(''):'<div style="font-size:.82rem;color:var(--hint);padding:10px 0">No expenses</div>';
+  const tbody=document.getElementById('exp-table-body'); if(!tbody) return;
+  tbody.innerHTML=allExp.length?allExp.map(e=>{const dt=new Date(e.date);const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return '<tr><td>'+lb+'</td><td>'+e.cat+'</td><td>'+(e.desc||'—')+'</td><td>'+fmtN(e.amt)+'</td></tr>';}).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--hint);padding:1rem">No expenses</td></tr>';
+}
+
+function renderOpeningReport(recs) {
+  const opened=recs.filter(r=>r.openingTime); let matched=0,mismatched=0;
+  opened.forEach(r=>{ if(r.expectedOpening!=null&&r.openingCash!=null){Math.abs(r.openingCash-r.expectedOpening)<1?matched++:mismatched++;}});
+  const setEl=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  setEl('m-open-days',opened.length); setEl('m-open-match',matched); setEl('m-open-mismatch',mismatched);
+  const tbody=document.getElementById('opening-table-body'); if(!tbody) return;
+  tbody.innerHTML=opened.length?opened.map(r=>{
+    const dt=new Date(r.date); const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+    const exp=r.expectedOpening; const act=r.openingCash||0; const diff=exp!=null?act-exp:null;
+    const st=diff==null?'—':Math.abs(diff)<1?'<span class="balanced">Match</span>':'<span class="short">Mismatch</span>';
+    return '<tr><td>'+lb+'</td><td>'+fmtN(act)+'</td><td>'+(exp!=null?fmtN(exp):'—')+'</td><td>'+(diff==null?'—':(diff>=0?'+':'')+fmtN(diff))+'</td><td>'+st+'</td><td>'+(r.countedBy||'—')+'</td><td>'+(r.mismatchReason||'—')+'</td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--hint);padding:1rem">No data</td></tr>';
 }
 
 // ════════════════════════════════════════════════════
@@ -1750,6 +1914,33 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     tabs[num - 1].click();
   }
+});
+
+// ── Report period buttons ─────────────────────────────
+document.querySelectorAll('.report-period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.report-period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    R.period = btn.dataset.period;
+    const customRange = document.getElementById('report-custom-range');
+    if (customRange) customRange.style.display = R.period === 'custom' ? 'block' : 'none';
+    if (R.period !== 'custom') loadMonthly();
+  });
+});
+
+document.getElementById('btn-load-custom')?.addEventListener('click', () => {
+  loadMonthly();
+});
+
+// ── Report sub-tabs ────────────────────────────────────
+document.querySelectorAll('.report-subtab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.report-subtab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.report-subtab-content').forEach(c => c.style.display = 'none');
+    btn.classList.add('active');
+    R.subtab = btn.dataset.subtab;
+    document.getElementById('report-' + R.subtab).style.display = 'block';
+  });
 });
 
 // ════════════════════════════════════════════════════
