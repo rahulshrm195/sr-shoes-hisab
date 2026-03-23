@@ -486,7 +486,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.4.0</div>
+  <div class="auth-ver">v1.4.2</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -509,7 +509,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.4.0</div>
+    <div class="topbar-ver">v1.4.2</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -924,7 +924,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.4.0</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.4.2</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -958,6 +958,18 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.4.2 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Email summary pre-fills owner and brother email</div>
+            <div class="cl-item">&#10003; Staff just clicks Send — no manual typing needed</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.4.1 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Closing validation — Closed by name required before saving</div>
+            <div class="cl-item">&#10003; Closing validation — closing cash count required</div>
+            <div class="cl-item">&#10003; Opening validation — Counted by name required before saving</div>
+            <div class="cl-item">&#10003; Opening validation — opening cash count required</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.4.0 <span class="cl-date">23 Mar 2026</span></div>
             <div class="cl-item">&#10003; Custom expense categories in Settings</div>
@@ -1609,6 +1621,19 @@ function calcOpening() {
 }
 
 document.getElementById('btn-save-opening').addEventListener('click', async () => {
+  const countedBy = document.getElementById('counted-by').value.trim();
+  const openCash  = getDenomTotal('open-denoms');
+  if (!countedBy) {
+    showToast('Please enter Cash counted by name');
+    document.getElementById('counted-by').focus();
+    document.getElementById('counted-by').style.borderColor = 'var(--red)';
+    setTimeout(() => { document.getElementById('counted-by').style.borderColor = ''; }, 2000);
+    return;
+  }
+  if (openCash === 0) {
+    showToast('Please count the opening cash before saving');
+    return;
+  }
   const btn = document.getElementById('btn-save-opening');
   saveBtnState(btn, 'saving');
   try {
@@ -1776,8 +1801,23 @@ function calcClosing() {
   else                    { dv.innerHTML=fmt(Math.abs(diff))+' short'; dv.className='diff-val short'; }
 }
 
-// Show confirmation dialog on save
+// Show confirmation dialog on save — validate first
 document.getElementById('btn-save-closing').addEventListener('click', () => {
+  const closedBy   = document.getElementById('closed-by').value.trim();
+  const totalSales = parseFloat(document.getElementById('total-sales').value)||0;
+  const closeCash  = getDenomTotal('close-denoms');
+
+  if (!closedBy) {
+    showToast('Please enter Closed by name before saving');
+    document.getElementById('closed-by').focus();
+    document.getElementById('closed-by').style.borderColor = 'var(--red)';
+    setTimeout(() => { document.getElementById('closed-by').style.borderColor = ''; }, 2000);
+    return;
+  }
+  if (closeCash === 0) {
+    showToast('Please count the closing cash before saving');
+    return;
+  }
   document.getElementById('closing-confirm').style.display = 'flex';
 });
 
@@ -2386,7 +2426,8 @@ document.getElementById('btn-email-summary')?.addEventListener('click', () => {
   body += 'Closed By: ' + (S.rec?.closedBy||'-') + NL + NL;
   body += '-- SR Shoes Hisab (hisab.srshoe.in)';
   const subject = 'SR Shoes Hisab - Daily Summary ' + today;
-  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  const recipients = 'rahulshrm195@gmail.com,surajsharma6395@gmail.com';
+  window.location.href = 'mailto:' + recipients + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 });
 
 // ════════════════════════════════════════════════════
