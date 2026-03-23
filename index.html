@@ -486,7 +486,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.4.2</div>
+  <div class="auth-ver">v1.4.3</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -509,7 +509,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.4.2</div>
+    <div class="topbar-ver">v1.4.3</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -924,7 +924,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.4.2</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.4.3</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -958,6 +958,12 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.4.3 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fixed denomination counts resetting on re-save</div>
+            <div class="cl-item">&#10003; All denomination values now saved including zeros</div>
+            <div class="cl-item">&#10003; Restore correctly sets zero values too</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.4.2 <span class="cl-date">23 Mar 2026</span></div>
             <div class="cl-item">&#10003; Email summary pre-fills owner and brother email</div>
@@ -1320,15 +1326,15 @@ function getDenomTotal(prefix) {
 
 function getDenomCounts(prefix) {
   const c = {};
-  NOTES.forEach(d => { const v=parseInt(document.getElementById(prefix+'-n-'+d)?.value)||0; if(v) c['n'+d]=v; });
-  COINS.forEach(d => { const v=parseInt(document.getElementById(prefix+'-c-'+d)?.value)||0; if(v) c['c'+d]=v; });
+  NOTES.forEach(d => { const v=parseInt(document.getElementById(prefix+'-n-'+d)?.value)||0; c['n'+d]=v; });
+  COINS.forEach(d => { const v=parseInt(document.getElementById(prefix+'-c-'+d)?.value)||0; c['c'+d]=v; });
   return c;
 }
 
 function setDenomCounts(prefix, counts) {
   if (!counts) return;
-  NOTES.forEach(d => { const el=document.getElementById(prefix+'-n-'+d); if(el&&counts['n'+d]) el.value=counts['n'+d]; });
-  COINS.forEach(d => { const el=document.getElementById(prefix+'-c-'+d); if(el&&counts['c'+d]) el.value=counts['c'+d]; });
+  NOTES.forEach(d => { const el=document.getElementById(prefix+'-n-'+d); if(el) el.value=counts['n'+d]||0; });
+  COINS.forEach(d => { const el=document.getElementById(prefix+'-c-'+d); if(el) el.value=counts['c'+d]||0; });
 }
 
 // ════════════════════════════════════════════════════
@@ -1648,10 +1654,13 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
     };
     await saveRec(data);
     S.rec = { ...S.rec, ...data };
+    console.log('[Save Opening] openingCash:', data.openingCash, 'counts:', JSON.stringify(data.openingCounts));
     saveBtnState(btn, 'saved', 'Save opening');
     showToast('Opening saved');
     updateStatsBar();
-    setTimeout(() => lockOpening(), 1600);
+    // Small delay to show saved state, then lock
+    if (window._openingLockTimer) clearTimeout(window._openingLockTimer);
+    window._openingLockTimer = setTimeout(() => lockOpening(), 1600);
       } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save opening'); }
 });
 
