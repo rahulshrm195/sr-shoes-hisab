@@ -446,7 +446,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.3.1</div>
+  <div class="auth-ver">v1.3.3</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -469,7 +469,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.3.1</div>
+    <div class="topbar-ver">v1.3.3</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -751,7 +751,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
           <button class="report-period-btn" data-period="week">This Week</button>
           <button class="report-period-btn" data-period="custom">Custom Range</button>
         </div>
-        <button class="btn-outline" id="btn-export-excel" style="font-size:.75rem;padding:6px 14px;color:var(--accent);border-color:var(--accent)">&#8595; Export Excel</button>
+        <button class="btn-outline" id="btn-export-excel" style="font-size:.75rem;padding:6px 14px;color:var(--accent);border-color:var(--accent)">Export Excel</button>
       </div>
 
       <!-- Custom date range -->
@@ -867,7 +867,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.3.1</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.3.3</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -889,6 +889,15 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.3.3 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fixed syntax error in email summary (spread operator)</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.3.2 <span class="cl-date">23 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fixed syntax error in Export button (arrow char)</div>
+            <div class="cl-item">&#10003; Fixed changelog overwrite bug — entries now always preserved</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.3.1 <span class="cl-date">21 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role-based access — staff sees Opening/Expenses/Closing/Summary only</div>
@@ -2007,10 +2016,10 @@ document.getElementById('btn-export-excel')?.addEventListener('click', async () 
     const period = R.period === 'month' ? 'Month' : R.period === 'week' ? 'Week' : from + '_to_' + to;
     XLSX.writeFile(wb, 'SRShoes_Hisab_' + period + '_' + dateKey() + '.xlsx');
     btn.textContent = 'Downloaded!';
-    setTimeout(() => { btn.textContent = '↓ Export Excel'; btn.disabled = false; }, 2000);
+    setTimeout(() => { btn.textContent = 'Export Excel'; btn.disabled = false; }, 2000);
   } catch(e) {
     showToast('Export error: ' + e.message);
-    btn.textContent = '↓ Export Excel'; btn.disabled = false;
+    btn.textContent = 'Export Excel'; btn.disabled = false;
   }
 });
 
@@ -2029,37 +2038,28 @@ document.getElementById('btn-email-summary')?.addEventListener('click', () => {
   const diff   = close - (open + cash - exp);
   const status = Math.abs(diff)<1 ? 'Balanced' : diff>0 ? 'Over by '+fmtN(diff) : 'Short by '+fmtN(Math.abs(diff));
   const today  = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
-
-  const subject = 'SR Shoes Hisab — Daily Summary ' + today;
-  const body = [
-    'SR SHOES HISAB — DAILY SUMMARY',
-    'Date: ' + today,
-    '',
-    'OPENING',
-    'Opening Cash: ' + fmtN(open),
-    'Counted By: ' + (S.rec?.countedBy||'—'),
-    '',
-    'SALES',
-    'Total Sales: ' + fmtN(total),
-    'Phonepe (UPI): ' + fmtN(ph),
-    'Card / Swipe: ' + fmtN(card),
-    'Cash Sales: ' + fmtN(cash),
-    '',
-    'EXPENSES',
-    'Total Expenses: ' + fmtN(exp),
-    ...S.expenses.filter(e=>e.amt).map(e=>'  ' + (e.cat||'').padEnd(16) + fmtN(e.amt)),
-    '',
-    'CLOSING',
-    'Closing Cash: ' + fmtN(close),
-    'Taken Home: ' + fmtN(taken),
-    'Tomorrow Opening: ' + fmtN(close-taken),
-    'Status: ' + status,
-    'Closed By: ' + (S.rec?.closedBy||'—'),
-    '',
-    '-- SR Shoes Hisab (hisab.srshoe.in)'
-  ].join('
-');
-
+  const NL = '\n';
+  let body = 'SR SHOES HISAB - DAILY SUMMARY' + NL;
+  body += 'Date: ' + today + NL + NL;
+  body += 'OPENING' + NL;
+  body += 'Opening Cash: ' + fmtN(open) + NL;
+  body += 'Counted By: ' + (S.rec?.countedBy||'-') + NL + NL;
+  body += 'SALES' + NL;
+  body += 'Total Sales: ' + fmtN(total) + NL;
+  body += 'Phonepe (UPI): ' + fmtN(ph) + NL;
+  body += 'Card / Swipe: ' + fmtN(card) + NL;
+  body += 'Cash Sales: ' + fmtN(cash) + NL + NL;
+  body += 'EXPENSES' + NL;
+  body += 'Total Expenses: ' + fmtN(exp) + NL;
+  S.expenses.filter(function(e){return e.amt;}).forEach(function(e){ body += '  ' + (e.cat||'') + ': ' + fmtN(e.amt) + NL; });
+  body += NL + 'CLOSING' + NL;
+  body += 'Closing Cash: ' + fmtN(close) + NL;
+  body += 'Taken Home: ' + fmtN(taken) + NL;
+  body += 'Tomorrow Opening: ' + fmtN(close-taken) + NL;
+  body += 'Status: ' + status + NL;
+  body += 'Closed By: ' + (S.rec?.closedBy||'-') + NL + NL;
+  body += '-- SR Shoes Hisab (hisab.srshoe.in)';
+  const subject = 'SR Shoes Hisab - Daily Summary ' + today;
   window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 });
 
