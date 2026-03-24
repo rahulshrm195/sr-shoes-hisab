@@ -1,7 +1,5 @@
-// SR Shoes Hisab — Service Worker
-// Network-first: always loads fresh, cache only used offline
-
-const CACHE = 'hisab-v1';
+// SR Shoes Hisab — Service Worker v2
+const CACHE = 'hisab-v2';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -20,7 +18,9 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (url.hostname.includes('googleapis.com') ||
       url.hostname.includes('firebaseio.com') ||
+      url.hostname.includes('firebasestorage') ||
       url.hostname.includes('jsdelivr.net') ||
+      url.hostname.includes('cdnjs.cloudflare.com') ||
       url.hostname.includes('fonts.g')) return;
 
   e.respondWith(
