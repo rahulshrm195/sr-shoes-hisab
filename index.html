@@ -486,7 +486,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.5.4</div>
+  <div class="auth-ver">v1.5.6</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -509,7 +509,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.5.4</div>
+    <div class="topbar-ver">v1.5.6</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -522,7 +522,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
-      <div class="stat-label">Total expenses</div>
+      <div class="stat-label">Cash out</div>
       <div class="stat-val" id="sb-expenses">&#8212;</div>
     </div>
 
@@ -815,7 +815,8 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <div class="card-title">Cash flow</div>
             <div class="sum-row"><span class="sl">Opening cash</span><span class="sv" id="ss-open">&#8377;0</span></div>
             <div class="sum-row"><span class="sl">+ Cash sales</span><span class="sv" id="ss-digital">&#8377;0</span></div>
-            <div class="sum-row"><span class="sl">&#8722; Expenses</span><span class="sv" id="ss-exp">&#8377;0</span></div>
+            <div class="sum-row"><span class="sl" style="color:var(--green)">+ Cash in</span><span class="sv" style="color:var(--green)" id="ss-cashin">&#8377;0</span></div>
+            <div class="sum-row"><span class="sl">&#8722; Cash out</span><span class="sv" id="ss-exp">&#8377;0</span></div>
             <div class="sum-row strong"><span class="sl">Closing cash</span><span class="sv" id="ss-close">&#8377;0</span></div>
             <div class="sum-row"><span class="sl">&#8722; Taken home</span><span class="sv" id="ss-taken">&#8377;0</span></div>
             <div class="sum-row strong"><span class="sl">Tomorrow's opening</span><span class="sv" id="ss-tomorrow">&#8377;0</span></div>
@@ -919,21 +920,40 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <!-- EXPENSES SUB-TAB -->
       <div id="report-expenses" class="report-subtab-content" style="display:none">
         <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-top:.875rem">
-          <div class="metric"><div class="metric-lbl">Total expenses</div><div class="metric-val red" id="m-exp">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Total cash out</div><div class="metric-val red" id="m-exp">&#8212;</div></div>
           <div class="metric"><div class="metric-lbl">Avg per day</div><div class="metric-val" id="m-exp-avg">&#8212;</div></div>
-          <div class="metric"><div class="metric-lbl">Days with exp</div><div class="metric-val" id="m-exp-days">&#8212;</div></div>
+          <div class="metric"><div class="metric-lbl">Days with entries</div><div class="metric-val" id="m-exp-days">&#8212;</div></div>
         </div>
-        <div class="card">
-          <div class="card-title">By category</div>
-          <div id="report-exp-cats"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">All entries</div>
-          <div class="report-table-wrap">
-            <table class="report-table" id="exp-report-table">
-              <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
-              <tbody id="exp-table-body"></tbody>
-            </table>
+        <div class="pc-two-col">
+          <div>
+            <div class="card">
+              <div class="card-title">Cash out by category</div>
+              <div id="report-exp-cats"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Cash out entries</div>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+                  <tbody id="exp-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-title" style="color:var(--green)">Cash in by category</div>
+              <div id="report-cashin-cats"></div>
+            </div>
+            <div class="card">
+              <div class="card-title" style="color:var(--green)">Cash in entries</div>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+                  <tbody id="cashin-report-body"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -975,7 +995,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.5.4</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.5.6</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1010,10 +1030,19 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <div class="cl-entry">
-            <div class="cl-ver">v1.5.4 <span class="cl-date">24 Mar 2026</span></div>
-            <div class="cl-item">&#10003; Fixed Reports tab crash — null check on subtab elements</div>
-            <div class="cl-item">&#10003; Reports data now loads correctly</div>
+            <div class="cl-ver">v1.5.6 <span class="cl-date">24 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fixed duplicate cashInData declaration in Excel export</div>
           </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.5.5 <span class="cl-date">24 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Cash In added to Email summary</div>
+            <div class="cl-item">&#10003; Cash In added to Print summary</div>
+            <div class="cl-item">&#10003; Cash In column added to Excel export</div>
+            <div class="cl-item">&#10003; Cash In sheet added to Excel export</div>
+            <div class="cl-item">&#10003; Reports diff calculation includes Cash In</div>
+            <div class="cl-item">&#10003; Stats bar label updated to Cash Out</div>
+          </div>
+          
           <div class="cl-entry">
             <div class="cl-ver">v1.5.3 <span class="cl-date">24 Mar 2026</span></div>
             <div class="cl-item">&#10003; Added error logging to Reports tab for debugging</div>
@@ -1964,13 +1993,15 @@ function calcClosing() {
   document.getElementById('r-expenses').innerHTML    = fmt(expTotal);
   document.getElementById('r-expected').innerHTML    = fmt(expected);
   document.getElementById('r-actual').innerHTML      = fmt(close);
-  document.getElementById('r-taken-home').innerHTML  = fmt(takenHome);
-  document.getElementById('r-tomorrow').innerHTML    = fmt(tomorrow);
+  const rth = document.getElementById('r-taken-home'); if(rth) rth.innerHTML = fmt(takenHome);
+  const rtom = document.getElementById('r-tomorrow'); if(rtom) rtom.innerHTML = fmt(tomorrow);
 
   const dv = document.getElementById('r-diff');
-  if (Math.abs(diff)<1)  { dv.innerHTML='&#8377;0 &#8212; Balanced'; dv.className='diff-val balanced'; }
-  else if (diff>0)        { dv.innerHTML=fmt(diff)+' over';           dv.className='diff-val over'; }
-  else                    { dv.innerHTML=fmt(Math.abs(diff))+' short'; dv.className='diff-val short'; }
+  if (dv) {
+    if (Math.abs(diff)<1)  { dv.innerHTML='&#8377;0 &#8212; Balanced'; dv.className='diff-val balanced'; }
+    else if (diff>0)        { dv.innerHTML=fmt(diff)+' over';           dv.className='diff-val over'; }
+    else                    { dv.innerHTML=fmt(Math.abs(diff))+' short'; dv.className='diff-val short'; }
+  }
 }
 
 // Show confirmation dialog on save — validate first
@@ -2053,9 +2084,10 @@ function updateSummaryTab() {
   const card     = S.rec?.cardSales       || 0;
   const cash     = S.rec?.cashSales       || 0;
   const exp      = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const cashIn   = S.cashIn.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
   const close    = S.rec?.closingCash     || 0;
   const taken    = S.rec?.takenHome       || 0;
-  const diff     = close - (open + cash - exp);
+  const diff     = close - (open + cash + cashIn - exp);
 
   document.getElementById('s-sales').innerHTML    = fmt(total);
   document.getElementById('s-expenses').innerHTML = fmt(exp);
@@ -2068,6 +2100,7 @@ function updateSummaryTab() {
   document.getElementById('ss-digital').innerHTML = fmt(phonepe + card);
   document.getElementById('ss-phonepe').innerHTML = fmt(phonepe);
   document.getElementById('ss-card').innerHTML    = fmt(card);
+  const ssci = document.getElementById('ss-cashin'); if(ssci) ssci.innerHTML = fmt(cashIn);
   document.getElementById('ss-exp').innerHTML     = fmt(exp);
   document.getElementById('ss-close').innerHTML   = fmt(close);
   document.getElementById('ss-taken').innerHTML   = fmt(taken);
@@ -2079,9 +2112,9 @@ function updateSummaryTab() {
     ? Object.entries(cats).map(([c,v])=>`<div class="sum-row"><span class="sl">${c}</span><span class="sv">${fmtN(v)}</span></div>`).join('')
     : '<div class="sum-row"><span class="sl" style="opacity:.5">No expenses</span></div>';
 
-  document.getElementById('ss-notes').textContent    = S.rec?.openingNotes || '—';
-  document.getElementById('ss-counted').textContent  = S.rec?.countedBy    || '—';
-  document.getElementById('ss-closed').textContent   = S.rec?.closedBy     || '—';
+  const ssNotes   = document.getElementById('ss-notes');   if(ssNotes)   ssNotes.textContent   = S.rec?.openingNotes || '—';
+  const ssCounted = document.getElementById('ss-counted'); if(ssCounted) ssCounted.textContent = S.rec?.countedBy    || '—';
+  const ssClosed  = document.getElementById('ss-closed');  if(ssClosed)  ssClosed.textContent  = S.rec?.closedBy     || '—';
 }
 
 document.getElementById('btn-print').addEventListener('click', () => {
@@ -2102,7 +2135,9 @@ document.getElementById('btn-print').addEventListener('click', () => {
   txt += 'Phonepe (UPI) : ' + fmtN(ph) + NL;
   txt += 'Card/Swipe    : ' + fmtN(card) + NL;
   txt += 'Cash sales    : ' + fmtN(cash) + NL;
-  txt += 'Expenses      : ' + fmtN(exp) + NL;
+  txt += 'Cash out      : ' + fmtN(exp) + NL;
+  const pCashIn = S.cashIn.reduce(function(s,e){return s+(parseFloat(e.amt)||0);},0);
+  if (pCashIn > 0) txt += 'Cash in       : +' + fmtN(pCashIn) + NL;
   txt += 'Closing cash  : ' + fmtN(close) + NL;
   txt += 'Taken home    : ' + fmtN(taken) + NL;
   txt += 'Tomorrow open : ' + fmtN(close-taken) + NL + SEP + NL;
@@ -2153,11 +2188,11 @@ async function loadMonthly() {
 function renderSalesReport(recs) {
   try {
   const closed = recs.filter(r => r.closingCash);
-  let ts=0, tp=0, tc=0, tca=0, te=0;
-  closed.forEach(r => { ts+=r.totalSales||0; tp+=r.phonepe||0; tc+=r.cardSales||0; tca+=r.cashSales||0; te+=r.expenseTotal||0; });
+  let ts=0, tp=0, tc=0, tca=0, te=0, tci=0;
+  closed.forEach(r => { ts+=r.totalSales||0; tp+=r.phonepe||0; tc+=r.cardSales||0; tca+=r.cashSales||0; te+=r.expenseTotal||0; tci+=(r.cashInTotal||0); });
   const setEl = (id, v) => { const el=document.getElementById(id); if(el) el.innerHTML=v; };
   setEl('m-sales', fmt(ts)); setEl('m-phonepe', fmt(tp)); setEl('m-card', fmt(tc));
-  setEl('m-cash', fmt(tca)); setEl('m-net', fmt(ts-te));
+  setEl('m-cash', fmt(tca)); setEl('m-net', fmt(ts+tci-te));
   const md = document.getElementById('m-days'); if(md) md.textContent = closed.length;
   const days=[]; for(let i=13;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);days.push(dateKey(dt));}
   const byday={}; recs.forEach(r=>byday[r.date]=r);
@@ -2190,7 +2225,7 @@ function renderSalesReport(recs) {
 
   const tbody=document.getElementById('sales-table-body'); if(!tbody) return;
   tbody.innerHTML = closed.length ? closed.map(r => {
-    const diff=(r.closingCash||0)-((r.openingCash||0)+(r.cashSales||0)-(r.expenseTotal||0));
+    const diff=(r.closingCash||0)-((r.openingCash||0)+(r.cashSales||0)+(r.cashInTotal||0)-(r.expenseTotal||0));
     const dc=Math.abs(diff)<1?'balanced':diff>0?'over':'short';
     const dt=new Date(r.date); const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
     return '<tr><td>'+lb+'</td><td>'+fmtN(r.totalSales||0)+'</td><td>'+fmtN(r.phonepe||0)+'</td><td>'+fmtN(r.cardSales||0)+'</td><td>'+fmtN(r.cashSales||0)+'</td><td>'+fmtN(r.expenseTotal||0)+'</td><td>'+fmtN((r.totalSales||0)-(r.expenseTotal||0))+'</td><td class="'+dc+'">'+(Math.abs(diff)<1?'Balanced':(diff>0?'+':'')+fmtN(diff))+'</td><td>'+(r.closedBy||'—')+'</td></tr>';
@@ -2200,9 +2235,14 @@ function renderSalesReport(recs) {
 
 function renderExpenseReport(recs) {
   const allExp=[]; let te=0; const catTotals={}; let dwe=0;
+  const allIn=[]; let ti=0; const inTotals={};
   recs.forEach(r => {
-    if (!r.expenses?.length) return; dwe++;
-    r.expenses.forEach(e => { if(!e.amt) return; const amt=parseFloat(e.amt)||0; te+=amt; catTotals[e.cat]=(catTotals[e.cat]||0)+amt; allExp.push({date:r.date,cat:e.cat,desc:e.desc||'',amt}); });
+    if (r.expenses?.length) { dwe++;
+      r.expenses.forEach(e => { if(!e.amt) return; const amt=parseFloat(e.amt)||0; te+=amt; catTotals[e.cat]=(catTotals[e.cat]||0)+amt; allExp.push({date:r.date,cat:e.cat,desc:e.desc||'',amt}); });
+    }
+    if (r.cashIn?.length) {
+      r.cashIn.forEach(e => { if(!e.amt) return; const amt=parseFloat(e.amt)||0; ti+=amt; inTotals[e.cat]=(inTotals[e.cat]||0)+amt; allIn.push({date:r.date,cat:e.cat,desc:e.desc||'',amt}); });
+    }
   });
   const days=recs.filter(r=>r.closingCash).length||1;
   const setEl=(id,v)=>{const el=document.getElementById(id);if(el)el.innerHTML=v;};
@@ -2212,7 +2252,16 @@ function renderExpenseReport(recs) {
   const cats=document.getElementById('report-exp-cats');
   if(cats) cats.innerHTML=sorted.length?sorted.map(([cat,amt])=>'<div class="exp-cat-row"><div><div>'+cat+'</div><div class="exp-cat-bar" style="width:'+Math.round(amt/maxCat*100)+'%"></div></div><div style="font-family:var(--mono);font-weight:600">'+fmtN(amt)+'</div></div>').join(''):'<div style="font-size:.82rem;color:var(--hint);padding:10px 0">No expenses</div>';
   const tbody=document.getElementById('exp-table-body'); if(!tbody) return;
-  tbody.innerHTML=allExp.length?allExp.map(e=>{const dt=new Date(e.date);const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return '<tr><td>'+lb+'</td><td>'+e.cat+'</td><td>'+(e.desc||'—')+'</td><td>'+fmtN(e.amt)+'</td></tr>';}).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--hint);padding:1rem">No expenses</td></tr>';
+  tbody.innerHTML=allExp.length?allExp.map(e=>{const dt=new Date(e.date);const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return '<tr><td>'+lb+'</td><td>'+e.cat+'</td><td>'+(e.desc||'—')+'</td><td>'+fmtN(e.amt)+'</td></tr>';}).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--hint);padding:1rem">No cash out entries</td></tr>';
+
+  // Cash In section
+  const inCats=document.getElementById('report-cashin-cats');
+  if(inCats){
+    const sortedIn=Object.entries(inTotals).sort((a,b)=>b[1]-a[1]); const maxIn=sortedIn[0]?.[1]||1;
+    inCats.innerHTML=sortedIn.length?sortedIn.map(([cat,amt])=>'<div class="exp-cat-row"><div><div>'+cat+'</div><div class="exp-cat-bar" style="width:'+Math.round(amt/maxIn*100)+'%;background:var(--green)"></div></div><div style="font-family:var(--mono);font-weight:600;color:var(--green)">+'+fmtN(amt)+'</div></div>').join(''):'<div style="font-size:.82rem;color:var(--hint);padding:8px 0">No cash in entries</div>';
+  }
+  const inTbody=document.getElementById('cashin-report-body');
+  if(inTbody) inTbody.innerHTML=allIn.length?allIn.map(e=>{const dt=new Date(e.date);const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return '<tr><td>'+lb+'</td><td style="color:var(--green)">'+e.cat+'</td><td>'+(e.desc||'—')+'</td><td style="color:var(--green)">+'+fmtN(e.amt)+'</td></tr>';}).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--hint);padding:1rem">No cash in entries</td></tr>';
 }
 
 function renderOpeningReport(recs) {
@@ -2524,13 +2573,14 @@ document.getElementById('btn-export-excel')?.addEventListener('click', async () 
 
     // ── Sales sheet ──
     const salesData = [
-      ['Date', 'Total Sales', 'Phonepe', 'Card', 'Cash Sales', 'Expenses', 'Net', 'Closing Cash', 'Diff', 'Taken Home', 'Tomorrow Opening', 'Closed By']
+      ['Date', 'Total Sales', 'Phonepe', 'Card', 'Cash Sales', 'Cash In', 'Cash Out', 'Net', 'Closing Cash', 'Diff', 'Taken Home', 'Tomorrow Opening', 'Closed By']
     ];
     recs.filter(r=>r.closingCash).forEach(r => {
-      const diff = (r.closingCash||0) - ((r.openingCash||0) + (r.cashSales||0) - (r.expenseTotal||0));
+      const ci = (r.cashIn||[]).reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+      const diff = (r.closingCash||0) - ((r.openingCash||0) + (r.cashSales||0) + ci - (r.expenseTotal||0));
       salesData.push([
         r.date, r.totalSales||0, r.phonepe||0, r.cardSales||0, r.cashSales||0,
-        r.expenseTotal||0, (r.totalSales||0)-(r.expenseTotal||0),
+        ci, r.expenseTotal||0, (r.totalSales||0)-(r.expenseTotal||0),
         r.closingCash||0, diff, r.takenHome||0,
         (r.closingCash||0)-(r.takenHome||0), r.closedBy||''
       ]);
@@ -2555,6 +2605,15 @@ document.getElementById('btn-export-excel')?.addEventListener('click', async () 
       openData.push([r.date, act, exp!=null?exp:'', diff, status, r.countedBy||'', r.mismatchReason||'']);
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(openData), 'Opening');
+
+    // ── Cash In sheet ──
+    const cashInData = [['Date', 'Category', 'Description', 'Amount']];
+    recs.forEach(r => {
+      (r.cashIn||[]).forEach(e => {
+        if (e.amt) cashInData.push([r.date, e.cat||'', e.desc||'', parseFloat(e.amt)||0]);
+      });
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cashInData), 'Cash In');
 
     // Download
     const period = R.period === 'month' ? 'Month' : R.period === 'week' ? 'Week' : from + '_to_' + to;
@@ -2593,8 +2652,15 @@ document.getElementById('btn-email-summary')?.addEventListener('click', () => {
   body += 'Phonepe (UPI): ' + fmtN(ph) + NL;
   body += 'Card / Swipe: ' + fmtN(card) + NL;
   body += 'Cash Sales: ' + fmtN(cash) + NL + NL;
-  body += 'EXPENSES' + NL;
-  body += 'Total Expenses: ' + fmtN(exp) + NL;
+  const cashInAmt = S.cashIn.reduce(function(s,e){return s+(parseFloat(e.amt)||0);},0);
+  if (cashInAmt > 0) {
+    body += 'CASH IN' + NL;
+    body += 'Total Cash In: ' + fmtN(cashInAmt) + NL;
+    S.cashIn.filter(function(e){return e.amt;}).forEach(function(e){ body += '  ' + (e.cat||'') + ': ' + fmtN(e.amt) + NL; });
+    body += NL;
+  }
+  body += 'CASH OUT' + NL;
+  body += 'Total Cash Out: ' + fmtN(exp) + NL;
   S.expenses.filter(function(e){return e.amt;}).forEach(function(e){ body += '  ' + (e.cat||'') + ': ' + fmtN(e.amt) + NL; });
   body += NL + 'CLOSING' + NL;
   body += 'Closing Cash: ' + fmtN(close) + NL;
