@@ -486,7 +486,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.5.6</div>
+  <div class="auth-ver">v1.5.7</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -509,7 +509,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.5.6</div>
+    <div class="topbar-ver">v1.5.7</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -995,7 +995,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.5.6</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.5.7</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1029,6 +1029,11 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.5.7 <span class="cl-date">24 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Stats bar closing diff restored and working</div>
+            <div class="cl-item">&#10003; Full audit passed — all data connections verified</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.5.6 <span class="cl-date">24 Mar 2026</span></div>
             <div class="cl-item">&#10003; Fixed duplicate cashInData declaration in Excel export</div>
@@ -1631,26 +1636,35 @@ function applyRole() {
 // STATS BAR
 // ════════════════════════════════════════════════════
 function updateStatsBar() {
-  
   const openCash  = S.rec?.openingCash;
-  const expTotal   = S.expenses.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
-  const cashInTot  = S.cashIn.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
+  const expTotal  = S.expenses.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
+  const cashInTot = S.cashIn.reduce((s,e) => s + (parseFloat(e.amt)||0), 0);
   const countedBy = S.rec?.countedBy || document.getElementById('counted-by')?.value?.trim() || '';
   const isSaved   = !!S.rec?.openingTime;
 
-
   const sbOpen = document.getElementById('sb-opening');
   const sbExp  = document.getElementById('sb-expenses');
-  const sbBy   = document.getElementById('sb-counted-by');
   const sbStat = document.getElementById('sb-status');
+  const sbDiff = document.getElementById('sb-diff');
+  const sbBy   = document.getElementById('sb-counted-by');
 
-
-  if (sbOpen) sbOpen.textContent  = openCash != null ? fmtN(openCash) : '—';
-  if (sbExp)  sbExp.textContent   = expTotal > 0 ? fmtN(expTotal) : '—';
-  if (sbBy)   sbBy.textContent    = countedBy || '—';
-  if (sbStat) sbStat.innerHTML    = isSaved
+  if (sbOpen) sbOpen.textContent = openCash != null ? fmtN(openCash) : '—';
+  if (sbExp)  sbExp.textContent  = expTotal > 0 ? fmtN(expTotal) : (cashInTot > 0 ? '+'+fmtN(cashInTot) : '—');
+  if (sbBy)   sbBy.textContent   = countedBy || '—';
+  if (sbStat) sbStat.innerHTML   = isSaved
     ? '<span class="sb-badge saved">Saved ✓</span>'
     : '<span class="sb-badge pending">Not saved</span>';
+  if (sbDiff && S.rec?.closingTime) {
+    const close   = S.rec?.closingCash  || 0;
+    const cash    = S.rec?.cashSales    || 0;
+    const cashIn  = S.rec?.cashInTotal  || 0;
+    const diff    = close - ((openCash||0) + cash + cashIn - expTotal);
+    sbDiff.textContent = Math.abs(diff) < 1 ? 'Balanced' : (diff > 0 ? '+' : '') + fmtN(diff);
+    sbDiff.style.color = Math.abs(diff) < 1 ? 'rgba(255,255,255,0.9)' : diff < 0 ? '#fca5a5' : '#86efac';
+  } else if (sbDiff) {
+    sbDiff.textContent = '—';
+    sbDiff.style.color = '';
+  }
 }
 
 // ════════════════════════════════════════════════════
