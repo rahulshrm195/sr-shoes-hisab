@@ -486,7 +486,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.5.7</div>
+  <div class="auth-ver">v1.5.9</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -509,7 +509,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.5.7</div>
+    <div class="topbar-ver">v1.5.9</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -631,7 +631,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
                 style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;cursor:pointer;">
               </select>
             </div>
-            <button class="btn-save" id="btn-save-one-expense" style="margin-top:0">Save cash out</button>
+            <button class="btn-save" id="btn-save-one-expense" style="margin-top:0;background:var(--red)">Save cash out</button>
             <div id="exp-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);margin-top:8px;min-height:1em"></div>
           </div>
           </div><!-- end entry-form-out -->
@@ -818,8 +818,8 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <div class="sum-row"><span class="sl" style="color:var(--green)">+ Cash in</span><span class="sv" style="color:var(--green)" id="ss-cashin">&#8377;0</span></div>
             <div class="sum-row"><span class="sl">&#8722; Cash out</span><span class="sv" id="ss-exp">&#8377;0</span></div>
             <div class="sum-row strong"><span class="sl">Closing cash</span><span class="sv" id="ss-close">&#8377;0</span></div>
-            <div class="sum-row"><span class="sl">&#8722; Taken home</span><span class="sv" id="ss-taken">&#8377;0</span></div>
-            <div class="sum-row strong"><span class="sl">Tomorrow's opening</span><span class="sv" id="ss-tomorrow">&#8377;0</span></div>
+            <div class="sum-row" id="ss-taken-row"><span class="sl">&#8722; Taken home</span><span class="sv" id="ss-taken">&#8377;0</span></div>
+            <div class="sum-row strong" id="ss-tomorrow-row"><span class="sl">Tomorrow's opening</span><span class="sv" id="ss-tomorrow">&#8377;0</span></div>
           </div>
         </div>
         <div>
@@ -995,7 +995,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.5.7</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.5.9</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1029,6 +1029,16 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.5.9 <span class="cl-date">24 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Save cash out button changed to red</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.5.8 <span class="cl-date">24 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Tomorrow's opening hidden from staff in Summary</div>
+            <div class="cl-item">&#10003; Taken home hidden from staff in Summary</div>
+            <div class="cl-item">&#10003; Prevents blind count manipulation via Summary tab</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.5.7 <span class="cl-date">24 Mar 2026</span></div>
             <div class="cl-item">&#10003; Stats bar closing diff restored and working</div>
@@ -1622,6 +1632,12 @@ function applyRole() {
   const usersCard = document.getElementById('users-card');
   if (catCard)   catCard.style.display   = isOwner ? '' : 'none';
   if (usersCard) usersCard.style.display = isOwner ? '' : 'none';
+  // Tomorrow's opening and taken home — hidden from staff (prevents blind count manipulation)
+  const tomorrowRow = document.getElementById('ss-tomorrow-row');
+  const takenRow    = document.getElementById('ss-taken-row');
+  if (tomorrowRow) tomorrowRow.style.display = isOwner ? '' : 'none';
+  if (takenRow)    takenRow.style.display    = isOwner ? '' : 'none';
+  if (takenRow)    takenRow.style.display    = isOwner ? '' : 'none';
   // Gear icon — show for all (settings available to all but user management owner only)
   // If staff on a hidden section, redirect to opening
   if (!isOwner) {
