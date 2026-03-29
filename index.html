@@ -486,7 +486,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.5.9</div>
+  <div class="auth-ver">v1.6.4</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -509,7 +509,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.5.9</div>
+    <div class="topbar-ver">v1.6.4</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -758,7 +758,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
                 <span class="recon-lbl">&#8722; Taken home</span>
                 <span class="recon-val" id="r-taken-home">&#8377;0</span>
               </div>
-              <div class="recon-row" style="margin-top:4px;">
+              <div class="recon-row" id="r-tomorrow-row" style="margin-top:4px;">
                 <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text)">= Tomorrow's opening</span>
                 <span style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--accent)" id="r-tomorrow">&#8377;0</span>
               </div>
@@ -814,7 +814,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
           <div class="card">
             <div class="card-title">Cash flow</div>
             <div class="sum-row"><span class="sl">Opening cash</span><span class="sv" id="ss-open">&#8377;0</span></div>
-            <div class="sum-row"><span class="sl">+ Cash sales</span><span class="sv" id="ss-digital">&#8377;0</span></div>
+            <div class="sum-row"><span class="sl">+ UPI / Card</span><span class="sv" id="ss-digital">&#8377;0</span></div>
             <div class="sum-row"><span class="sl" style="color:var(--green)">+ Cash in</span><span class="sv" style="color:var(--green)" id="ss-cashin">&#8377;0</span></div>
             <div class="sum-row"><span class="sl">&#8722; Cash out</span><span class="sv" id="ss-exp">&#8377;0</span></div>
             <div class="sum-row strong"><span class="sl">Closing cash</span><span class="sv" id="ss-close">&#8377;0</span></div>
@@ -995,7 +995,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.5.9</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.6.4</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1029,6 +1029,32 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.6.4 <span class="cl-date">30 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Cloud Functions deployed for background notifications</div>
+            <div class="cl-item">&#10003; FCM token saved to users collection for Cloud Functions</div>
+            <div class="cl-item">&#10003; Notifications now work even when app is fully closed</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.6.3 <span class="cl-date">29 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Notification when opening is saved (counted by + cash amount)</div>
+            <div class="cl-item">&#10003; Notification when day is closed (sales + cash + closed by)</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.6.2 <span class="cl-date">29 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Tomorrow's opening hidden from staff in Closing tab</div>
+            <div class="cl-item">&#10003; Blind counting fully protected across all tabs</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.6.1 <span class="cl-date">29 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fixed carry banner showing today's closing as yesterday's</div>
+            <div class="cl-item">&#10003; expectedOpening now saved only to tomorrow's document</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.6.0 <span class="cl-date">29 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Fixed Total sales showing &#8377;0 in Sales Breakdown</div>
+            <div class="cl-item">&#10003; Fixed Cash flow showing wrong amount for UPI/Card row</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.5.9 <span class="cl-date">24 Mar 2026</span></div>
             <div class="cl-item">&#10003; Save cash out button changed to red</div>
@@ -1592,6 +1618,17 @@ async function boot() {
   // Load role FIRST so locks know owner vs staff
   await loadRole();
 
+  // Save FCM token if notifications already granted
+  if ('Notification' in window && Notification.permission === 'granted' && typeof firebase !== 'undefined') {
+    try {
+      const msg = firebase.messaging();
+      const t = await msg.getToken({vapidKey: VAPID});
+      if (t && S.user) {
+        await db.collection('users').doc(S.user.uid).set({fcmToken: t, storeId: STORE_ID, role: S.role}, {merge: true});
+      }
+    } catch(e) { console.warn('FCM token save:', e); }
+  }
+
   // Notifications
   if ('Notification' in window && Notification.permission === 'default') {
     document.getElementById('notif-bar').classList.add('show');
@@ -1632,11 +1669,13 @@ function applyRole() {
   const usersCard = document.getElementById('users-card');
   if (catCard)   catCard.style.display   = isOwner ? '' : 'none';
   if (usersCard) usersCard.style.display = isOwner ? '' : 'none';
-  // Tomorrow's opening and taken home — hidden from staff (prevents blind count manipulation)
-  const tomorrowRow = document.getElementById('ss-tomorrow-row');
-  const takenRow    = document.getElementById('ss-taken-row');
-  if (tomorrowRow) tomorrowRow.style.display = isOwner ? '' : 'none';
-  if (takenRow)    takenRow.style.display    = isOwner ? '' : 'none';
+  // Tomorrow's opening and taken home — hidden from staff everywhere (prevents blind count manipulation)
+  const tomorrowRow   = document.getElementById('ss-tomorrow-row');
+  const takenRow      = document.getElementById('ss-taken-row');
+  const closeTomorrow = document.getElementById('r-tomorrow-row');
+  if (tomorrowRow)   tomorrowRow.style.display   = isOwner ? '' : 'none';
+  if (takenRow)      takenRow.style.display       = isOwner ? '' : 'none';
+  if (closeTomorrow) closeTomorrow.style.display  = isOwner ? '' : 'none';
   if (takenRow)    takenRow.style.display    = isOwner ? '' : 'none';
   // Gear icon — show for all (settings available to all but user management owner only)
   // If staff on a hidden section, redirect to opening
@@ -1801,6 +1840,15 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
     saveBtnState(btn, 'saved', 'Save opening');
     showToast('Opening saved');
     updateStatsBar();
+    if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification('SR Shoes Hisab — Opening saved', {
+          body: 'Counted by: ' + (data.countedBy||'') + ' — Cash: ' + fmtN(data.openingCash),
+          icon: '/icon-192.png', badge: '/icon-192.png',
+          tag: 'opening-saved', vibrate: [100, 50, 100]
+        });
+      });
+    }
     // Small delay to show saved state, then lock
     if (window._openingLockTimer) clearTimeout(window._openingLockTimer);
     window._openingLockTimer = setTimeout(() => lockOpening(), 1600);
@@ -2083,10 +2131,10 @@ document.getElementById('btn-confirm-close-ok').addEventListener('click', async 
       cashSales, takenHome, closedBy,
       expenseTotal: expTotal,
       cashInTotal,
-      closingTime: new Date().toISOString(),
-      expectedOpening: tomorrowOpening
+      closingTime: new Date().toISOString()
     };
     await saveRec(data);
+    // Save tomorrow's expected opening to TOMORROW's document only
     const tomorrowDate = dateKey(new Date(Date.now() + 86400000));
     await saveRec({ date: tomorrowDate, expectedOpening: tomorrowOpening });
     S.rec = { ...S.rec, ...data };
@@ -2094,6 +2142,15 @@ document.getElementById('btn-confirm-close-ok').addEventListener('click', async 
     showToast('Day closed — ' + fmtN(tomorrowOpening) + ' carried forward to tomorrow');
     lockClosing();
     updateSummaryTab();
+    if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification('SR Shoes Hisab — Day closed', {
+          body: 'Sales: ' + fmtN(totalSales) + ' | Cash: ' + fmtN(closeCash) + ' | By: ' + closedBy,
+          icon: '/icon-192.png', badge: '/icon-192.png',
+          tag: 'closing-saved', vibrate: [200, 100, 200]
+        });
+      });
+    }
   } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save & close day'); }
 });
 
@@ -2468,7 +2525,10 @@ document.getElementById('btn-enable-notif').addEventListener('click', async () =
   const p = await Notification.requestPermission();
   if (p==='granted') {
     document.getElementById('notif-bar').classList.remove('show');
-    if (msg) { try { const t=await msg.getToken({vapidKey:VAPID}); if(t) await db.collection('settings').doc(STORE_ID).set({fcmToken:t},{merge:true}); } catch(e){} }
+    if (msg) { try { const t=await msg.getToken({vapidKey:VAPID}); if(t) {
+          await db.collection('settings').doc(STORE_ID).set({fcmToken:t},{merge:true});
+          if(S.user) await db.collection('users').doc(S.user.uid).set({fcmToken:t,storeId:STORE_ID},{merge:true});
+        } } catch(e){} }
     showToast('Notifications enabled');
     scheduleEOD();
   }
