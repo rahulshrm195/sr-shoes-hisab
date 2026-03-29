@@ -486,7 +486,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.6.4</div>
+  <div class="auth-ver">v1.6.5</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -509,7 +509,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.6.4</div>
+    <div class="topbar-ver">v1.6.5</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -995,7 +995,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.6.4</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.6.5</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1029,6 +1029,11 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.6.5 <span class="cl-date">30 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Cash Out delete button — owner only (hidden from staff)</div>
+            <div class="cl-item">&#10003; Cash In delete button — owner only (already correct, verified)</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.6.4 <span class="cl-date">30 Mar 2026</span></div>
             <div class="cl-item">&#10003; Cloud Functions deployed for background notifications</div>
@@ -1955,7 +1960,7 @@ document.getElementById('cashin-desc')?.addEventListener('keydown',e=>{if(e.key=
         <div class="exp-today-cat">${e.cat}</div>
       </div>
       <div class="exp-today-amt">${fmtN(parseFloat(e.amt)||0)}</div>
-      <button class="exp-today-del" onclick="delExp(${e.id})">&#x2715;</button>
+      ${S.role === 'owner' ? '<button class="exp-today-del" onclick="delExp(' + e.id + ')">&#x2715;</button>' : ''}
     </div>`
   ).join('');
   const total = S.expenses.reduce((s,e) => s+(parseFloat(e.amt)||0), 0);
@@ -1965,6 +1970,7 @@ document.getElementById('cashin-desc')?.addEventListener('keydown',e=>{if(e.key=
 }
 
 window.delExp = async id => {
+  if (S.role !== 'owner') return;
   S.expenses = S.expenses.filter(x => x.id !== id);
   try {
     await saveRec({ date: S.today, expenses: S.expenses });
