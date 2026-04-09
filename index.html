@@ -1048,7 +1048,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <div class="cl-ver">v1.6.6 <span class="cl-date">30 Mar 2026</span></div>
             <div class="cl-item">&#10003; Auto email on closing — daily summary sent automatically</div>
             <div class="cl-item">&#10003; Email includes sales, cash flow, expenses, cash in, details</div>
-            <div class="cl-item">&#10003; Sent to rahulshrm195@gmail.com and surajsharma6395@gmail.com</div>
+            <div class="cl-item">&#10003; Sent to <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d4a6b5bca1b8a7bca6b9e5ede194b3b9b5bdb8fab7bbb9">[email&#160;protected]</a> and <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e29197908388918a83908f83d4d1dbd7a2858f838b8ecc818d8f">[email&#160;protected]</a></div>
           </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.6.5 <span class="cl-date">30 Mar 2026</span></div>
@@ -1372,7 +1372,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ════════════════════════════════════════════════════
 // FIREBASE CONFIG
 // ════════════════════════════════════════════════════
@@ -2818,16 +2818,15 @@ async function sendDailySummaryEmail() {
     const today   = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
 
     // Build expenses list
+    const NL = '\n';
     const expList = S.expenses.filter(e=>e.amt).map(e =>
       (e.cat||'') + (e.desc ? ' ('+e.desc+')' : '') + ': Rs.' + fmtN(parseFloat(e.amt)||0)
-    ).join('
-') || 'No expenses';
+    ).join(NL) || 'No expenses';
 
     // Build cash in list
     const cashInList = S.cashIn.filter(e=>e.amt).map(e =>
       (e.cat||'') + (e.desc ? ' ('+e.desc+')' : '') + ': +Rs.' + fmtN(parseFloat(e.amt)||0)
-    ).join('
-') || 'No cash in entries';
+    ).join(NL) || 'No cash in entries';
 
     const params = {
       date:             today,
@@ -2874,13 +2873,15 @@ document.getElementById('btn-install').addEventListener('click', async () => {
 });
 
 // ════════════════════════════════════════════════════
-// SERVICE WORKER
 // ════════════════════════════════════════════════════
-if ('serviceWorker' in navigator) {
+// SERVICE WORKER REGISTRATION
+// ════════════════════════════════════════════════════
+if ('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com') {
   navigator.serviceWorker.register('/sw.js')
     .then(() => console.log('SW registered'))
     .catch(e => console.warn('SW:', e));
 }
+
 </script>
 </body>
 </html>
