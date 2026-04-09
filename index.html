@@ -490,7 +490,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.7.1</div>
+  <div class="auth-ver">v1.7.2</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -513,7 +513,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.7.1</div>
+    <div class="topbar-ver">v1.7.2</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -803,6 +803,19 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
                     style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:9px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;"
                     onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
                 </div>
+                <div style="margin-bottom:12px">
+                  <label class="field-label">Payment type</label>
+                  <div style="display:flex;gap:8px;">
+                    <button type="button" id="pc-type-cash" onclick="setPcType('cash')"
+                      style="flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-family:var(--mono);font-size:.85rem;font-weight:600;cursor:pointer;">
+                      Cash
+                    </button>
+                    <button type="button" id="pc-type-online" onclick="setPcType('online')"
+                      style="flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--mono);font-size:.85rem;cursor:pointer;">
+                      UPI / Card
+                    </button>
+                  </div>
+                </div>
                 <button class="btn-save" id="btn-save-pc" style="margin-top:0;background:var(--amber)">+ Add post-closing entry</button>
                 <div id="pc-error" style="font-size:.72rem;color:var(--red);font-family:var(--mono);margin-top:6px;min-height:1em"></div>
               </div>
@@ -1025,7 +1038,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.7.1</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.7.2</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1059,6 +1072,13 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.7.2 <span class="cl-date">09 Apr 2026</span></div>
+            <div class="cl-item">&#10003; Post-closing: Cash or UPI/Card type selection</div>
+            <div class="cl-item">&#10003; Cash post-closing sales added to tomorrow's opening</div>
+            <div class="cl-item">&#10003; Summary tab shows post-closing entries</div>
+            <div class="cl-item">&#10003; Tomorrow's opening correctly adjusted</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.7.1 <span class="cl-date">09 Apr 2026</span></div>
             <div class="cl-item">&#10003; Post-closing entries — add sales after day is closed</div>
@@ -2266,6 +2286,8 @@ function updateSummaryTab() {
   const cashIn   = S.cashIn.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
   const close    = S.rec?.closingCash     || 0;
   const taken    = S.rec?.takenHome       || 0;
+  const pcCash   = S.postClosing.filter(e=>e.type!=='online').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const pcTotal  = S.postClosing.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
   const diff     = close - (open + cash + cashIn - exp);
 
   document.getElementById('s-sales').innerHTML    = fmt(total);
@@ -2284,10 +2306,24 @@ function updateSummaryTab() {
   document.getElementById('ss-exp').innerHTML     = fmt(exp);
   document.getElementById('ss-close').innerHTML   = fmt(close);
   document.getElementById('ss-taken').innerHTML   = fmt(taken);
-  document.getElementById('ss-tomorrow').innerHTML= fmt(close - taken);
+  document.getElementById('ss-tomorrow').innerHTML= fmt(close - taken + pcCash);
 
   const cats = {};
   S.expenses.forEach(e => { if(e.amt) cats[e.cat]=(cats[e.cat]||0)+(parseFloat(e.amt)||0); });
+  // Post-closing entries in summary
+  const pcSection = document.getElementById('sum-postclosing');
+  if (pcSection) {
+    if (S.postClosing.length) {
+      pcSection.style.display = '';
+      var pcHtml = '<div class="card-title" style="color:var(--amber)">Post-closing entries</div>';
+      S.postClosing.forEach(function(e) { var t=e.type==='online'?'UPI/Card':'Cash'; pcHtml += '<div class="sum-row"><span class="sl">'+(e.desc||'Post-closing sale')+' ('+t+')</span><span class="sv" style="color:var(--amber)">+'+fmtN(parseFloat(e.amt)||0)+'</span></div>'; });
+      pcHtml += '<div class="sum-row strong"><span class="sl">Tomorrow opening adjusted</span><span class="sv">'+fmtN(close-taken+pcCash)+'</span></div>';
+      pcSection.innerHTML = pcHtml;
+    } else {
+      pcSection.style.display = 'none';
+    }
+  }
+
   document.getElementById('sum-cats').innerHTML = Object.keys(cats).length
     ? Object.entries(cats).map(([c,v])=>`<div class="sum-row"><span class="sl">${c}</span><span class="sv">${fmtN(v)}</span></div>`).join('')
     : '<div class="sum-row"><span class="sl" style="opacity:.5">No expenses</span></div>';
@@ -2860,6 +2896,29 @@ document.getElementById('btn-email-summary')?.addEventListener('click', () => {
 // ════════════════════════════════════════════════════
 // POST CLOSING ENTRIES
 // ════════════════════════════════════════════════════
+let pcType = 'cash'; // default
+
+window.setPcType = function(type) {
+  pcType = type;
+  const cashBtn   = document.getElementById('pc-type-cash');
+  const onlineBtn = document.getElementById('pc-type-online');
+  if (type === 'cash') {
+    cashBtn.style.background   = 'var(--accent)';
+    cashBtn.style.color        = '#fff';
+    cashBtn.style.borderColor  = 'var(--accent)';
+    onlineBtn.style.background = 'var(--bg3)';
+    onlineBtn.style.color      = 'var(--text)';
+    onlineBtn.style.borderColor= 'var(--border2)';
+  } else {
+    onlineBtn.style.background = 'var(--accent)';
+    onlineBtn.style.color      = '#fff';
+    onlineBtn.style.borderColor= 'var(--accent)';
+    cashBtn.style.background   = 'var(--bg3)';
+    cashBtn.style.color        = 'var(--text)';
+    cashBtn.style.borderColor  = 'var(--border2)';
+  }
+};
+
 function renderPostClosing() {
   const list = document.getElementById('post-closing-list');
   if (!list) return;
@@ -2867,18 +2926,25 @@ function renderPostClosing() {
     list.innerHTML = '<div style="font-size:.82rem;font-family:var(--mono);color:var(--hint);padding:8px 0">No post-closing entries</div>';
     return;
   }
-  const total = S.postClosing.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const total     = S.postClosing.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const cashTotal = S.postClosing.filter(e=>e.type!=='online').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
   list.innerHTML = S.postClosing.map(e =>
     '<div class="exp-today-row">' +
       '<div class="exp-today-left">' +
         '<div class="exp-today-desc">' + (e.desc||'Post-closing sale') + '</div>' +
-        '<div class="exp-today-cat" style="color:var(--amber)">Post-closing</div>' +
+        '<div class="exp-today-cat" style="color:var(--amber)">' + (e.type==='online'?'UPI/Card':'Cash') + ' — Post-closing</div>' +
       '</div>' +
       '<div class="exp-today-amt" style="color:var(--amber)">+' + fmtN(parseFloat(e.amt)||0) + '</div>' +
       (S.role === 'owner' ? '<button class="exp-today-del" onclick="delPostClosing(' + e.id + ')">&#x2715;</button>' : '') +
     '</div>'
   ).join('') +
-  '<div class="total-row" style="margin-top:8px"><span class="total-label">Total post-closing</span><span class="total-val" style="color:var(--amber)">' + fmtN(total) + '</span></div>';
+  '<div class="total-row" style="margin-top:8px"><span class="total-label">Total post-closing</span><span class="total-val" style="color:var(--amber)">' + fmtN(total) + '</span></div>' +
+  (cashTotal > 0 ? '<div style="font-size:.75rem;font-family:var(--mono);color:var(--muted);margin-top:4px">Cash sales: ' + fmtN(cashTotal) + ' added to tomorrow opening</div>' : '');
+  // Update tomorrow's opening in reconciliation
+  const rTom = document.getElementById('r-tomorrow');
+  const closingCash = S.rec?.closingCash || 0;
+  const takenHome   = S.rec?.takenHome   || 0;
+  if (rTom) rTom.innerHTML = fmt(closingCash - takenHome + cashTotal);
 }
 
 window.delPostClosing = async id => {
@@ -2898,7 +2964,7 @@ document.getElementById('btn-save-pc')?.addEventListener('click', async () => {
   const err  = document.getElementById('pc-error');
   err.textContent = '';
   if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; btn.disabled=false; return; }
-  S.postClosing.push({id:S.postClosingId++, amt, desc, time: new Date().toISOString()});
+  S.postClosing.push({id:S.postClosingId++, amt, desc, type: pcType, time: new Date().toISOString()});
   try {
     await saveRec({date:S.today, postClosing:S.postClosing});
     document.getElementById('pc-amt').value = '';
