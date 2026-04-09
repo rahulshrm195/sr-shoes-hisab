@@ -13,6 +13,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
 
+<!-- EmailJS for auto email on closing -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init('jVTnttZ94cN3HCdXM');</script>
+
 <!-- SheetJS for Excel export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -486,7 +490,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.6.5</div>
+  <div class="auth-ver">v1.6.8</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -509,7 +513,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.6.5</div>
+    <div class="topbar-ver">v1.6.8</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -995,7 +999,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.6.5</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.6.8</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1029,6 +1033,23 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.6.8 <span class="cl-date">01 Apr 2026</span></div>
+            <div class="cl-item">&#10003; Delete buttons now show correctly for owner</div>
+            <div class="cl-item">&#10003; Lists re-render after role loads so buttons appear</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.6.7 <span class="cl-date">01 Apr 2026</span></div>
+            <div class="cl-item">&#10003; Fixed duplicate cash in entries on single click</div>
+            <div class="cl-item">&#10003; Fixed duplicate expense entries on single click</div>
+            <div class="cl-item">&#10003; Button disabled immediately on click to prevent double submit</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.6.6 <span class="cl-date">30 Mar 2026</span></div>
+            <div class="cl-item">&#10003; Auto email on closing — daily summary sent automatically</div>
+            <div class="cl-item">&#10003; Email includes sales, cash flow, expenses, cash in, details</div>
+            <div class="cl-item">&#10003; Sent to rahulshrm195@gmail.com and surajsharma6395@gmail.com</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.6.5 <span class="cl-date">30 Mar 2026</span></div>
             <div class="cl-item">&#10003; Cash Out delete button — owner only (hidden from staff)</div>
@@ -1662,6 +1683,9 @@ async function loadRole() {
     S.role = snap.exists ? (snap.data().role || 'staff') : 'staff';
   } catch(e) { S.role = 'staff'; }
   applyRole();
+  // Re-render lists after role is known so delete buttons show correctly
+  renderExpenses();
+  renderCashIn();
 }
 
 function applyRole() {
@@ -1908,15 +1932,16 @@ window.delCashIn = async id => {
 };
 
 document.getElementById('btn-save-one-cashin')?.addEventListener('click', async () => {
+  const btn=document.getElementById('btn-save-one-cashin');
+  if (btn.disabled) return;
+  btn.disabled=true; btn.textContent='Saving...';
   const amt=parseFloat(document.getElementById('cashin-amt').value)||0;
   const desc=document.getElementById('cashin-desc').value.trim();
   const cat=document.getElementById('cashin-cat').value;
   const err=document.getElementById('cashin-error');
   err.textContent='';
-  if(!amt||amt<=0){err.textContent='Enter a valid amount.';return;}
+  if(!amt||amt<=0){err.textContent='Enter a valid amount.';btn.disabled=false;btn.textContent='Save cash in';return;}
   S.cashIn.push({id:S.cashInId++,amt,desc,cat});
-  const btn=document.getElementById('btn-save-one-cashin');
-  btn.disabled=true; btn.textContent='Saving...';
   try {
     await saveRec({date:S.today,cashIn:S.cashIn});
     document.getElementById('cashin-amt').value='';
@@ -1980,12 +2005,15 @@ window.delExp = async id => {
 };
 
 document.getElementById('btn-save-one-expense').addEventListener('click', async () => {
+  const saveBtn = document.getElementById('btn-save-one-expense');
+  if (saveBtn.disabled) return;
+  saveBtn.disabled = true;
   const amt  = parseFloat(document.getElementById('exp-amt').value) || 0;
   const desc = document.getElementById('exp-desc').value.trim();
   const cat  = document.getElementById('exp-cat').value || EXP_CATS[0];
   const err  = document.getElementById('exp-error');
   err.textContent = '';
-  if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; return; }
+  if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; saveBtn.disabled = false; return; }
   S.expenses.push({ id: S.expId++, amt, desc, cat });
   const btn = document.getElementById('btn-save-one-expense');
   btn.disabled = true; btn.textContent = 'Saving…';
@@ -2148,6 +2176,7 @@ document.getElementById('btn-confirm-close-ok').addEventListener('click', async 
     showToast('Day closed — ' + fmtN(tomorrowOpening) + ' carried forward to tomorrow');
     lockClosing();
     updateSummaryTab();
+    sendDailySummaryEmail();
     if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(reg => {
         reg.showNotification('SR Shoes Hisab — Day closed', {
@@ -2769,6 +2798,62 @@ document.getElementById('btn-email-summary')?.addEventListener('click', () => {
   const recipients = 'rahulshrm195@gmail.com,surajsharma6395@gmail.com';
   window.location.href = 'mailto:' + recipients + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 });
+
+// ════════════════════════════════════════════════════
+// AUTO EMAIL ON CLOSING
+// ════════════════════════════════════════════════════
+async function sendDailySummaryEmail() {
+  try {
+    const open    = S.rec?.openingCash  || 0;
+    const total   = S.rec?.totalSales   || 0;
+    const ph      = S.rec?.phonepe      || 0;
+    const card    = S.rec?.cardSales    || 0;
+    const cash    = S.rec?.cashSales    || 0;
+    const exp     = S.expenses.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+    const cashIn  = S.cashIn.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+    const close   = S.rec?.closingCash  || 0;
+    const taken   = S.rec?.takenHome    || 0;
+    const diff    = close - (open + cash + cashIn - exp);
+    const status  = Math.abs(diff)<1 ? 'Balanced' : (diff>0 ? 'Over Rs.'+Math.round(Math.abs(diff)) : 'Short Rs.'+Math.round(Math.abs(diff)));
+    const today   = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+
+    // Build expenses list
+    const expList = S.expenses.filter(e=>e.amt).map(e =>
+      (e.cat||'') + (e.desc ? ' ('+e.desc+')' : '') + ': Rs.' + fmtN(parseFloat(e.amt)||0)
+    ).join('
+') || 'No expenses';
+
+    // Build cash in list
+    const cashInList = S.cashIn.filter(e=>e.amt).map(e =>
+      (e.cat||'') + (e.desc ? ' ('+e.desc+')' : '') + ': +Rs.' + fmtN(parseFloat(e.amt)||0)
+    ).join('
+') || 'No cash in entries';
+
+    const params = {
+      date:             today,
+      total_sales:      'Rs.' + fmtN(total),
+      phonepe:          'Rs.' + fmtN(ph),
+      card:             'Rs.' + fmtN(card),
+      cash_sales:       'Rs.' + fmtN(cash),
+      opening_cash:     'Rs.' + fmtN(open),
+      cash_in:          'Rs.' + fmtN(cashIn),
+      cash_out:         'Rs.' + fmtN(exp),
+      closing_cash:     'Rs.' + fmtN(close),
+      taken_home:       'Rs.' + fmtN(taken),
+      tomorrow_opening: 'Rs.' + fmtN(close - taken),
+      status:           status,
+      expenses_list:    expList,
+      cashin_list:      cashInList,
+      counted_by:       S.rec?.countedBy || '-',
+      closed_by:        S.rec?.closedBy  || '-',
+    };
+
+    await emailjs.send('service_hgpt6cd', 'template_q4smdtr', params);
+    console.log('Daily summary email sent');
+  } catch(e) {
+    console.warn('Email send failed:', e);
+  }
+}
 
 // ════════════════════════════════════════════════════
 // PWA INSTALL
