@@ -490,7 +490,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.7.0</div>
+  <div class="auth-ver">v1.7.1</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -513,7 +513,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.7.0</div>
+    <div class="topbar-ver">v1.7.1</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -782,6 +782,32 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             </div>
             <button id="btn-edit-closing" class="btn-outline" style="display:none;font-size:.75rem;padding:5px 14px;color:var(--accent);border-color:var(--accent);">Edit closing</button>
           </div>
+
+          <!-- Post closing entries -->
+          <div id="post-closing-section" style="display:none;margin-top:1rem;">
+            <div class="card">
+              <div class="card-title" style="color:var(--amber)">&#9888; Post-closing entries</div>
+              <div id="post-closing-list">
+                <div style="font-size:.82rem;font-family:var(--mono);color:var(--hint);padding:8px 0">No post-closing entries</div>
+              </div>
+              <div style="margin-top:12px;padding-top:12px;border-top:.5px solid var(--border2)">
+                <div style="margin-bottom:8px">
+                  <label class="field-label">Amount (&#8377;)</label>
+                  <input type="number" id="pc-amt" placeholder="0" inputmode="numeric"
+                    style="width:100%;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:1.2rem;font-weight:600;color:var(--text);outline:none;"
+                    onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
+                </div>
+                <div style="margin-bottom:12px">
+                  <label class="field-label">Description</label>
+                  <input type="text" id="pc-desc" placeholder="e.g. Last minute sale, Customer paid cash"
+                    style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:9px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;"
+                    onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=''">
+                </div>
+                <button class="btn-save" id="btn-save-pc" style="margin-top:0;background:var(--amber)">+ Add post-closing entry</button>
+                <div id="pc-error" style="font-size:.72rem;color:var(--red);font-family:var(--mono);margin-top:6px;min-height:1em"></div>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -999,7 +1025,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.7.0</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.7.1</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1033,6 +1059,13 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.7.1 <span class="cl-date">09 Apr 2026</span></div>
+            <div class="cl-item">&#10003; Post-closing entries — add sales after day is closed</div>
+            <div class="cl-item">&#10003; Appears only after closing is locked</div>
+            <div class="cl-item">&#10003; Staff can add, owner can delete</div>
+            <div class="cl-item">&#10003; Push notification to owner on each entry</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.7.0 <span class="cl-date">09 Apr 2026</span></div>
             <div class="cl-item">&#10003; Fixed crash: renderCashIn not found on boot</div>
@@ -1426,6 +1459,8 @@ let S = {
   expId: 0,
   cashIn: [],
   cashInId: 0,
+  postClosing: [],
+  postClosingId: 0,
   settings: { eodTime: '20:00', lowCashAlert: 500 },
 };
 
@@ -1622,8 +1657,12 @@ async function boot() {
       S.rec      = rec;
       S.expenses = rec.expenses || [];
       S.expId    = S.expenses.length;
-      S.cashIn   = rec.cashIn   || [];
-      S.cashInId = S.cashIn.length;
+      S.cashIn        = rec.cashIn        || [];
+      S.cashInId      = S.cashIn.length;
+      S.postClosing   = rec.postClosing   || [];
+      S.postClosingId = S.postClosing.length;
+      S.postClosing = rec.postClosing || [];
+      S.postClosingId = S.postClosing.length;
     }
   } catch(e) { console.warn('Load error:', e); }
 
@@ -2078,6 +2117,10 @@ function lockClosing() {
   document.getElementById('closing-locked-bar').style.display = 'flex';
   const editBtn = document.getElementById('btn-edit-closing');
   if (editBtn) editBtn.style.display = S.role === 'owner' ? 'block' : 'none';
+  // Show post-closing section after day is closed
+  const pcSection = document.getElementById('post-closing-section');
+  if (pcSection) pcSection.style.display = 'block';
+  renderPostClosing();
 }
 
 function unlockClosing() {
@@ -2812,6 +2855,80 @@ document.getElementById('btn-email-summary')?.addEventListener('click', () => {
   const subject = 'SR Shoes Hisab - Daily Summary ' + today;
   const recipients = 'rahulshrm195@gmail.com,surajsharma6395@gmail.com';
   window.location.href = 'mailto:' + recipients + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+});
+
+// ════════════════════════════════════════════════════
+// POST CLOSING ENTRIES
+// ════════════════════════════════════════════════════
+function renderPostClosing() {
+  const list = document.getElementById('post-closing-list');
+  if (!list) return;
+  if (!S.postClosing.length) {
+    list.innerHTML = '<div style="font-size:.82rem;font-family:var(--mono);color:var(--hint);padding:8px 0">No post-closing entries</div>';
+    return;
+  }
+  const total = S.postClosing.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  list.innerHTML = S.postClosing.map(e =>
+    '<div class="exp-today-row">' +
+      '<div class="exp-today-left">' +
+        '<div class="exp-today-desc">' + (e.desc||'Post-closing sale') + '</div>' +
+        '<div class="exp-today-cat" style="color:var(--amber)">Post-closing</div>' +
+      '</div>' +
+      '<div class="exp-today-amt" style="color:var(--amber)">+' + fmtN(parseFloat(e.amt)||0) + '</div>' +
+      (S.role === 'owner' ? '<button class="exp-today-del" onclick="delPostClosing(' + e.id + ')">&#x2715;</button>' : '') +
+    '</div>'
+  ).join('') +
+  '<div class="total-row" style="margin-top:8px"><span class="total-label">Total post-closing</span><span class="total-val" style="color:var(--amber)">' + fmtN(total) + '</span></div>';
+}
+
+window.delPostClosing = async id => {
+  if (S.role !== 'owner') return;
+  S.postClosing = S.postClosing.filter(x=>x.id!==id);
+  await saveRec({date:S.today, postClosing:S.postClosing});
+  renderPostClosing();
+  showToast('Entry removed');
+};
+
+document.getElementById('btn-save-pc')?.addEventListener('click', async () => {
+  const btn = document.getElementById('btn-save-pc');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  const amt  = parseFloat(document.getElementById('pc-amt').value)||0;
+  const desc = document.getElementById('pc-desc').value.trim();
+  const err  = document.getElementById('pc-error');
+  err.textContent = '';
+  if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; btn.disabled=false; return; }
+  S.postClosing.push({id:S.postClosingId++, amt, desc, time: new Date().toISOString()});
+  try {
+    await saveRec({date:S.today, postClosing:S.postClosing});
+    document.getElementById('pc-amt').value = '';
+    document.getElementById('pc-desc').value = '';
+    renderPostClosing();
+    btn.textContent = 'Saved!';
+    setTimeout(()=>{btn.textContent='+ Add post-closing entry';btn.disabled=false;},1500);
+    showToast('Post-closing entry saved — ' + fmtN(amt));
+    // Notify owner
+    if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification('SR Shoes Hisab - Post-closing sale', {
+          body: (desc||'Sale') + ': +' + fmtN(amt) + ' (after closing)',
+          icon: '/icon-192.png', badge: '/icon-192.png',
+          tag: 'postclosing-'+Date.now(), vibrate:[200,100,200]
+        });
+      });
+    }
+  } catch(e) {
+    S.postClosing.pop();
+    err.textContent = 'Error: ' + e.message;
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('pc-amt')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('pc-desc').focus();
+});
+document.getElementById('pc-desc')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-save-pc').click();
 });
 
 // ════════════════════════════════════════════════════
