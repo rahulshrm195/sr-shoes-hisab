@@ -1675,6 +1675,7 @@ async function boot() {
   updateSummaryTab();
 
   // Lock opening AFTER role is known so edit button shows correctly for owner
+  console.log('[Boot] S.rec:', S.rec ? 'exists' : 'null', '| openingTime:', S.rec?.openingTime, '| closingTime:', S.rec?.closingTime, '| role:', S.role);
   if (S.rec?.openingTime) {
     lockOpening();
   }
