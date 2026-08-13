@@ -1714,13 +1714,43 @@ async function boot() {
     calcOpening();
   }
 
-  // Save FCM token if notifications already granted
+  /*// Save FCM token if notifications already granted
   if ('Notification' in window && Notification.permission === 'granted' && typeof firebase !== 'undefined') {
     try {
       const msg = firebase.messaging();
       const t = await msg.getToken({vapidKey: VAPID});
       if (t && S.user) {
         await db.collection('users').doc(S.user.uid).set({fcmToken: t, storeId: STORE_ID, role: S.role}, {merge: true});
+      }
+    } catch(e) { console.warn('FCM token save:', e); }
+  }*/
+
+  // Save FCM token — per device, so multiple phones all receive pushes
+  if ('Notification' in window && Notification.permission === 'granted' && typeof firebase !== 'undefined') {
+    try {
+      const messaging = firebase.messaging();
+      const token = await messaging.getToken({ vapidKey: VAPID });
+      if (token) {
+        // Get or create a stable device ID for this browser
+        let devId = localStorage.getItem('sr_device_id');
+        if (!devId) {
+          devId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+          localStorage.setItem('sr_device_id', devId);
+        }
+        // Detect device name from user agent
+        const ua = navigator.userAgent;
+        const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const device  = /iPhone|iPod/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows PC' : 'Device';
+        const browser = /CriOS|Chrome/.test(ua) && !/Edg/.test(ua) ? 'Chrome' : /Edg/.test(ua) ? 'Edge' : /Firefox/.test(ua) ? 'Firefox' : /Safari/.test(ua) ? 'Safari' : 'Browser';
+        const devName = device + ' · ' + browser + (standalone ? ' · PWA' : '');
+        // Save to fcm_tokens collection — one doc per device
+        await db.collection('fcm_tokens').doc(devId).set({
+          token, devId, devName,
+          uid: S.user?.uid || null,
+          email: S.user?.email || null,
+          storeId: STORE_ID,
+          lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
       }
     } catch(e) { console.warn('FCM token save:', e); }
   }
