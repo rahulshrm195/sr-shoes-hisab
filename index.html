@@ -1817,7 +1817,120 @@ function applyRole() {
       document.querySelector('.nav-tab[data-tab="opening"]').click();
     }
   }
+  // Show day-closed screen for staff if today is already closed
+  if (!isOwner) checkDayClosed();
 }
+
+// ════════════════════════════════════════════════════
+// DAY CLOSED SCREEN — staff only
+// ════════════════════════════════════════════════════
+function checkDayClosed() {
+  // Safety checks — never lock owner, never lock on a new day
+  if (S.role === 'owner') return;
+  if (!S.rec?.closingTime) return;
+  if (S.rec?.date !== S.today) return; // new day = fresh start, no lock
+
+  // Hide nav tabs, main content, stats bar
+  const navTabs  = document.querySelector('.nav-tabs');
+  const main     = document.querySelector('.main');
+  const statBar  = document.querySelector('.stats-bar');
+  if (navTabs) navTabs.style.display = 'none';
+  if (main)    main.style.display    = 'none';
+  if (statBar) statBar.style.display = 'none';
+
+  // Don't insert twice
+  if (document.getElementById('day-closed-screen')) return;
+
+  const closedAt = new Date(S.rec.closingTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  const pcList   = (S.postClosing || []).map(e =>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.82rem">
+      <span style="color:var(--muted)">${e.desc||'—'} · ${e.type||'cash'}</span>
+      <span style="color:var(--accent)">+₹${Math.round(e.amt||0).toLocaleString('en-IN')}</span>
+    </div>`
+  ).join('');
+
+  const screen = document.createElement('div');
+  screen.id = 'day-closed-screen';
+  screen.style.cssText = 'padding:2rem 1rem;text-align:center;max-width:420px;margin:0 auto;';
+  screen.innerHTML = `
+    <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
+    <div style="font-size:1.2rem;font-weight:700;margin-bottom:.5rem">Day Closed</div>
+    <div style="font-size:.85rem;font-family:var(--mono);color:var(--muted);margin-bottom:2rem">
+      Closing done at ${closedAt}. See you tomorrow!
+    </div>
+    <div style="background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--rl);padding:1.25rem;text-align:left">
+      <div style="font-size:.65rem;font-family:var(--mono);color:var(--accent);letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:1rem">
+        Post-closing entry
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="display:block;font-size:.68rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;margin-bottom:5px">Amount (₹)</label>
+        <input type="number" id="dc-amt" placeholder="0" inputmode="numeric"
+          style="width:100%;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-family:var(--mono);font-size:1.1rem;font-weight:600;color:var(--text);outline:none;">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="display:block;font-size:.68rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;margin-bottom:5px">Description</label>
+        <input type="text" id="dc-desc" placeholder="e.g. Last minute sale"
+          style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button id="dc-cash" onclick="setDcType('cash')"
+          style="flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-family:var(--mono);font-size:.85rem;font-weight:600;cursor:pointer;">
+          Cash
+        </button>
+        <button id="dc-online" onclick="setDcType('online')"
+          style="flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--mono);font-size:.85rem;cursor:pointer;">
+          UPI / Card
+        </button>
+      </div>
+      <button onclick="saveDcEntry()"
+        style="width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-family:var(--sans);font-size:.9rem;font-weight:700;cursor:pointer;margin-bottom:4px">
+        + Add Entry
+      </button>
+      <div id="dc-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);margin-top:6px;min-height:1em"></div>
+      <div id="dc-list" style="margin-top:8px">${pcList}</div>
+    </div>`;
+
+  // Insert right after the topbar (before stats bar)
+  const topbar = document.querySelector('.topbar');
+  topbar.parentNode.insertBefore(screen, topbar.nextSibling);
+}
+
+let dcType = 'cash';
+window.setDcType = function(t) {
+  dcType = t;
+  const cash   = document.getElementById('dc-cash');
+  const online = document.getElementById('dc-online');
+  if (cash)   { cash.style.background   = t==='cash'   ? 'var(--accent)' : 'var(--bg3)';   cash.style.color   = t==='cash'   ? '#fff' : 'var(--text)';   cash.style.borderColor   = t==='cash'   ? 'var(--accent)' : 'var(--border2)'; }
+  if (online) { online.style.background = t==='online' ? 'var(--accent)' : 'var(--bg3)'; online.style.color = t==='online' ? '#fff' : 'var(--text)'; online.style.borderColor = t==='online' ? 'var(--accent)' : 'var(--border2)'; }
+};
+
+window.saveDcEntry = async function() {
+  const amt  = parseFloat(document.getElementById('dc-amt').value) || 0;
+  const desc = document.getElementById('dc-desc').value.trim();
+  const err  = document.getElementById('dc-error');
+  err.textContent = '';
+  if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; return; }
+  if (!S.postClosing)   S.postClosing   = [];
+  if (!S.postClosingId) S.postClosingId = S.postClosing.length;
+  S.postClosing.push({ id: S.postClosingId++, amt, desc, type: dcType, time: new Date().toISOString() });
+  try {
+    await saveRec({ date: S.today, postClosing: S.postClosing });
+    document.getElementById('dc-amt').value  = '';
+    document.getElementById('dc-desc').value = '';
+    // Refresh entry list
+    const list = document.getElementById('dc-list');
+    if (list) list.innerHTML = S.postClosing.map(e =>
+      `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.82rem">
+        <span style="color:var(--muted)">${e.desc||'—'} · ${e.type||'cash'}</span>
+        <span style="color:var(--accent)">+₹${Math.round(e.amt||0).toLocaleString('en-IN')}</span>
+      </div>`
+    ).join('');
+    showToast('Post-closing entry saved');
+  } catch(e) {
+    S.postClosing.pop();
+    err.textContent = 'Error: ' + e.message;
+  }
+};
 
 // ════════════════════════════════════════════════════
 // STATS BAR
@@ -3137,6 +3250,78 @@ if ('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent
     .then(() => console.log('SW registered'))
     .catch(e => console.warn('SW:', e));
 }
+
+// ════════════════════════════════════════════════════
+// DATE CHANGE WATCHER
+// Runs on tab focus and visibility change — handles the
+// case where PC is left on overnight and staff open the
+// app next morning without refreshing
+// ════════════════════════════════════════════════════
+async function onAppFocus() {
+  if (!S.user) return; // not logged in yet
+
+  const newDate = dateKey();
+
+  // Date has changed since boot — reload today's data
+  if (newDate !== S.today) {
+    S.today       = newDate;
+    S.rec         = null;
+    S.expenses    = [];
+    S.expId       = 0;
+    S.cashIn      = [];
+    S.cashInId    = 0;
+    S.postClosing = [];
+    S.postClosingId = 0;
+
+    // Remove day-closed screen if present
+    const dc = document.getElementById('day-closed-screen');
+    if (dc) dc.remove();
+
+    // Restore nav and main that were hidden
+    const navTabs = document.querySelector('.nav-tabs');
+    const main    = document.querySelector('.main');
+    const statBar = document.querySelector('.stats-bar');
+    if (navTabs) navTabs.style.display = '';
+    if (main)    main.style.display    = '';
+    if (statBar) statBar.style.display = '';
+
+    // Load fresh record for new day
+    try {
+      const rec = await loadRec(S.today);
+      if (rec) {
+        S.rec         = rec;
+        S.expenses    = rec.expenses    || [];
+        S.expId       = S.expenses.length;
+        S.cashIn      = rec.cashIn      || [];
+        S.cashInId    = S.cashIn.length;
+        S.postClosing = rec.postClosing || [];
+        S.postClosingId = S.postClosing.length;
+      }
+    } catch(e) { console.warn('Date refresh load error:', e); }
+
+    // Re-render fresh UI
+    buildDenoms('open-denoms',  calcOpening);
+    buildDenoms('close-denoms', calcClosing);
+    renderExpenses();
+    renderCashIn();
+    calcClosing();
+    updateStatsBar();
+    updateSummaryTab();
+    applyRole(); // this also re-checks day-closed for new date (will not trigger since no closing yet)
+
+    // Switch to opening tab
+    document.querySelector('.nav-tab[data-tab="opening"]')?.click();
+    document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-IN', { weekday:'short', day:'2-digit', month:'short' });
+  }
+}
+
+// Fire on tab/window focus
+window.addEventListener('focus', onAppFocus);
+
+// Fire on mobile when user switches back to the tab
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') onAppFocus();
+});
 
 </script>
 </body>
