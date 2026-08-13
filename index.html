@@ -2680,7 +2680,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
 // ════════════════════════════════════════════════════
 // NOTIFICATIONS
 // ════════════════════════════════════════════════════
-document.getElementById('btn-enable-notif').addEventListener('click', async () => {
+/*document.getElementById('btn-enable-notif').addEventListener('click', async () => {
   const p = await Notification.requestPermission();
   if (p==='granted') {
     document.getElementById('notif-bar').classList.remove('show');
@@ -2690,6 +2690,34 @@ document.getElementById('btn-enable-notif').addEventListener('click', async () =
         } } catch(e){} }
     showToast('Notifications enabled');
     scheduleEOD();
+  }
+});*/
+
+  document.getElementById('btn-enable-notif')?.addEventListener('click', async () => {
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    document.getElementById('notif-bar').classList.remove('show');
+    // Re-run token registration now that permission is granted
+    try {
+      const messaging = firebase.messaging();
+      const token = await messaging.getToken({ vapidKey: VAPID });
+      if (token) {
+        let devId = localStorage.getItem('sr_device_id');
+        if (!devId) { devId = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7); localStorage.setItem('sr_device_id', devId); }
+        const ua = navigator.userAgent;
+        const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const device  = /iPhone|iPod/.test(ua)?'iPhone':/iPad/.test(ua)?'iPad':/Android/.test(ua)?'Android':/Mac/.test(ua)?'Mac':/Windows/.test(ua)?'Windows PC':'Device';
+        const browser = /CriOS|Chrome/.test(ua)&&!/Edg/.test(ua)?'Chrome':/Edg/.test(ua)?'Edge':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':'Browser';
+        const devName = device+' · '+browser+(standalone?' · PWA':'');
+        await db.collection('fcm_tokens').doc(devId).set({
+          token, devId, devName,
+          uid: S.user?.uid||null, email: S.user?.email||null,
+          storeId: STORE_ID,
+          lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        showToast('Notifications enabled on this device ✓');
+      }
+    } catch(e) { console.warn('FCM:', e); }
   }
 });
 
