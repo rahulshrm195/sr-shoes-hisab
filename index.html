@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Syne:wght@400;600;700&amp;display=swap" rel="stylesheet">
 
 <!-- EmailJS for auto email on closing -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -553,6 +553,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
     <button class="nav-tab" data-tab="closing">Closing</button>
     <button class="nav-tab" data-tab="summary">Summary</button>
     <button class="nav-tab" data-tab="reports" id="tab-reports" style="display:none">Reports</button>
+    <button class="nav-tab" data-tab="suppliers" id="tab-suppliers">Suppliers</button>
   </nav>
   <div class="main">
 
@@ -881,6 +882,133 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
     </div>
 
+
+    <!-- SUPPLIERS -->
+    <div class="section" id="section-suppliers">
+
+      <!-- Overview bar -->
+      <div id="sup-overview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.875rem"></div>
+
+      <!-- Sub-tabs -->
+      <div style="display:flex;gap:0;margin-bottom:1rem;border-bottom:1.5px solid var(--border2);">
+        <button class="report-subtab active" id="sup-tab-list"   onclick="supSwitchTab('list')">Directory</button>
+        <button class="report-subtab"        id="sup-tab-report" onclick="supSwitchTab('report')">Reports</button>
+      </div>
+
+      <!-- DIRECTORY VIEW -->
+      <div id="sup-view-list">
+        <div style="display:flex;gap:8px;margin-bottom:.875rem">
+          <input type="text" id="sup-search" placeholder="Search supplier..." oninput="renderSupplierList()"
+            style="flex:1;background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:.85rem;color:var(--text);outline:none;">
+          <button onclick="openSupModal()" class="btn-save" style="margin-top:0;width:auto;padding:9px 16px;font-size:.85rem">+ New</button>
+        </div>
+        <div id="sup-list"></div>
+      </div>
+
+      <!-- REPORTS VIEW -->
+      <div id="sup-view-report" style="display:none">
+        <div id="sup-report-content"></div>
+      </div>
+
+    </div>
+
+    <!-- SUPPLIER LEDGER (full screen overlay) -->
+    <div id="sup-ledger-screen" style="display:none;position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;">
+      <div style="position:sticky;top:0;z-index:10;background:var(--bg2);border-bottom:.5px solid var(--border2);padding:.75rem 1rem;display:flex;align-items:center;gap:10px;">
+        <button onclick="closeSupLedger()" style="background:none;border:none;color:var(--accent);font-family:var(--mono);font-size:.85rem;cursor:pointer;">&#8592; Back</button>
+        <div id="sup-ledger-name" style="font-size:1rem;font-weight:700;flex:1"></div>
+        <button onclick="openTxnModal()" class="btn-save" style="margin-top:0;width:auto;padding:7px 14px;font-size:.82rem">+ Transaction</button>
+      </div>
+      <div style="padding:1rem;max-width:640px;margin:0 auto">
+        <!-- Supplier info -->
+        <div id="sup-ledger-info" style="margin-bottom:.875rem"></div>
+        <!-- Balance card -->
+        <div id="sup-ledger-balance" style="margin-bottom:.875rem"></div>
+        <!-- Transaction table -->
+        <div class="card">
+          <div class="card-title">Transaction History</div>
+          <div id="sup-ledger-txns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUPPLIER MODAL (create/edit) -->
+    <div class="modal-backdrop" id="sup-modal">
+      <div class="modal" style="max-width:420px">
+        <div class="modal-title">
+          <span id="sup-modal-title">New Supplier</span>
+          <button class="modal-close" onclick="closeSupModal()">&#10005;</button>
+        </div>
+        <label>Supplier Name *</label>
+        <input type="text" id="sup-name" placeholder="e.g. Bata Wholesale">
+        <label>Phone</label>
+        <input type="tel" id="sup-phone" placeholder="9XXXXXXXXX" inputmode="numeric">
+        <label>City / Area</label>
+        <input type="text" id="sup-city" placeholder="e.g. Mumbai">
+        <label>Notes</label>
+        <input type="text" id="sup-notes-field" placeholder="Any notes...">
+        <label>Opening Balance (₹)</label>
+        <input type="number" id="sup-ob" placeholder="0" inputmode="numeric">
+        <div style="display:flex;gap:8px;margin-bottom:10px;margin-top:4px">
+          <button id="sup-ob-we-owe" onclick="setObDir('we_owe')"
+            style="flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--red);background:var(--red);color:#fff;font-family:var(--mono);font-size:.82rem;font-weight:600;cursor:pointer;">
+            We owe them
+          </button>
+          <button id="sup-ob-they-owe" onclick="setObDir('they_owe')"
+            style="flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--mono);font-size:.82rem;cursor:pointer;">
+            They owe us
+          </button>
+        </div>
+        <div id="sup-modal-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);min-height:1em;margin-bottom:6px"></div>
+        <button class="btn-save" id="sup-modal-save" onclick="saveSupplier()">Save Supplier</button>
+      </div>
+    </div>
+
+    <!-- TRANSACTION MODAL -->
+    <div class="modal-backdrop" id="txn-modal">
+      <div class="modal" style="max-width:420px">
+        <div class="modal-title">
+          <span id="txn-modal-title">Add Transaction</span>
+          <button class="modal-close" onclick="closeTxnModal()">&#10005;</button>
+        </div>
+        <label>Type</label>
+        <select id="txn-type" onchange="onTxnTypeChange()">
+          <option value="purchase">📦 Purchase (credit)</option>
+          <option value="payment">💵 Payment made</option>
+          <option value="part_payment">🔄 Part payment</option>
+          <option value="return">↩️ Return</option>
+          <option value="advance">⬆️ Advance payment</option>
+          <option value="debit_note">📋 Debit note (our claim)</option>
+          <option value="credit_note">📋 Credit note (their adjustment)</option>
+        </select>
+        <label>Amount (₹) *</label>
+        <input type="number" id="txn-amt" placeholder="0" inputmode="numeric">
+        <div id="txn-billno-wrap">
+          <label>Bill / Invoice No (optional)</label>
+          <input type="text" id="txn-billno" placeholder="e.g. INV-2026-001">
+        </div>
+        <div id="txn-mode-wrap">
+          <label>Payment Mode</label>
+          <select id="txn-mode">
+            <option value="cash">Cash</option>
+            <option value="upi">UPI / PhonePe</option>
+            <option value="neft">Bank Transfer (NEFT/RTGS)</option>
+            <option value="cheque">Cheque</option>
+          </select>
+        </div>
+        <div id="txn-ref-wrap">
+          <label>Reference / UTR No (optional)</label>
+          <input type="text" id="txn-ref" placeholder="e.g. UTR1234567890">
+        </div>
+        <label>Date</label>
+        <input type="date" id="txn-date">
+        <label>Notes</label>
+        <input type="text" id="txn-notes" placeholder="Any notes...">
+        <div id="txn-modal-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);min-height:1em;margin-bottom:6px;margin-top:4px"></div>
+        <button class="btn-save" id="txn-modal-save" onclick="saveTxn()">Save Transaction</button>
+      </div>
+    </div>
+
     <!-- MONTHLY -->
     <div class="section" id="section-reports">
 
@@ -895,7 +1023,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
 
       <!-- Custom date range -->
-      <div id="report-custom-range" style="display:none" class="card" style="margin-bottom:.875rem">
+      <div id="report-custom-range" class="card" style="display:none;margin-bottom:.875rem">
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <div>
             <label class="field-label">From</label>
@@ -1343,7 +1471,8 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <div class="cl-ver">v1.1.8 <span class="cl-date">22 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role based access: staff and owner tabs</div>
             <div class="cl-item">&#10003; User management in Settings</div>
-            <div class="cl-entry">
+          </div>
+          <div class="cl-entry">
             <div class="cl-ver">v1.1.7 <span class="cl-date">22 Mar 2026</span></div>
             <div class="cl-item">&#10003; Fixed Android PWA notifications via Service Worker</div>
             <div class="cl-item">&#10003; Fixed EOD reminder notification</div>
@@ -3245,6 +3374,526 @@ document.getElementById('btn-install').addEventListener('click', async () => {
 // ════════════════════════════════════════════════════
 // SERVICE WORKER REGISTRATION
 // ════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════
+// SUPPLIERS — STATE & HELPERS
+// ════════════════════════════════════════════════════
+let SUP = {
+  suppliers: [],      // loaded supplier profiles
+  txns: {},           // txns per supplier { supplierId: [...] }
+  activeSup: null,    // currently open ledger
+  obDir: 'we_owe',    // opening balance direction
+  editSupId: null,    // null = create, else = edit
+};
+
+const supCol = () => db.collection('suppliers').where('storeId','==',STORE_ID);
+const txnCol = () => db.collection('supplier_txns').where('storeId','==',STORE_ID);
+
+function supFmt(n) { return '₹' + Math.round(Math.abs(n)||0).toLocaleString('en-IN'); }
+
+// Transaction types config
+const TXN_TYPES = {
+  purchase:    { label:'Purchase',      icon:'📦', sign:+1, showMode:false, showBill:true  },
+  payment:     { label:'Payment',       icon:'💵', sign:-1, showMode:true,  showBill:false },
+  part_payment:{ label:'Part Payment',  icon:'🔄', sign:-1, showMode:true,  showBill:false },
+  return:      { label:'Return',        icon:'↩️', sign:-1, showMode:false, showBill:false },
+  advance:     { label:'Advance',       icon:'⬆️', sign:-1, showMode:true,  showBill:false },
+  debit_note:  { label:'Debit Note',    icon:'📋', sign:-1, showMode:false, showBill:true  },
+  credit_note: { label:'Credit Note',   icon:'📋', sign:+1, showMode:false, showBill:true  },
+};
+
+const MODE_LABELS = { cash:'Cash', upi:'UPI/PhonePe', neft:'Bank Transfer', cheque:'Cheque' };
+
+// Compute running balance for a supplier from their txns array
+function computeBalance(supplier, txns) {
+  // Positive balance = we owe them; Negative = they owe us
+  let bal = supplier.openingBalance || 0; // already signed
+  txns.forEach(t => {
+    const cfg = TXN_TYPES[t.type];
+    if (cfg) bal += cfg.sign * (t.amount || 0);
+  });
+  return bal;
+}
+
+// ════════════════════════════════════════════════════
+// LOAD SUPPLIERS
+// ════════════════════════════════════════════════════
+async function loadSuppliers() {
+  try {
+    const snap = await supCol().orderBy('name').get();
+    SUP.suppliers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { console.warn('Load suppliers:', e); }
+}
+
+async function loadSupTxns(supplierId) {
+  try {
+    const snap = await txnCol()
+      .where('supplierId','==',supplierId)
+      .orderBy('date','asc')
+      .get();
+    SUP.txns[supplierId] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { console.warn('Load txns:', e); SUP.txns[supplierId] = []; }
+}
+
+// ════════════════════════════════════════════════════
+// SUPPLIERS TAB ENTRY POINT
+// ════════════════════════════════════════════════════
+async function initSuppliers() {
+  if (!SUP.suppliers.length) await loadSuppliers();
+  renderSupOverview();
+  renderSupplierList();
+}
+
+function supSwitchTab(tab) {
+  document.getElementById('sup-tab-list').classList.toggle('active',   tab==='list');
+  document.getElementById('sup-tab-report').classList.toggle('active', tab==='report');
+  document.getElementById('sup-view-list').style.display   = tab==='list'   ? '' : 'none';
+  document.getElementById('sup-view-report').style.display = tab==='report' ? '' : 'none';
+  if (tab==='report') renderSupReport();
+}
+
+// ════════════════════════════════════════════════════
+// OVERVIEW BAR (total outstanding)
+// ════════════════════════════════════════════════════
+function renderSupOverview() {
+  const el = document.getElementById('sup-overview');
+  if (!el) return;
+  // Compute total outstanding (sum of positive balances = we owe)
+  let totalOwe = 0, totalOwed = 0, count = 0;
+  SUP.suppliers.forEach(s => {
+    const txns = SUP.txns[s.id] || [];
+    const bal  = computeBalance(s, txns);
+    if (bal > 0) totalOwe  += bal;
+    if (bal < 0) totalOwed += Math.abs(bal);
+    count++;
+  });
+  el.innerHTML = `
+    <div style="flex:1;background:var(--bg2);border:.5px solid rgba(220,38,38,.3);border-radius:var(--r);padding:10px 14px">
+      <div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">We Owe Suppliers</div>
+      <div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--red)">${supFmt(totalOwe)}</div>
+    </div>
+    <div style="flex:1;background:var(--bg2);border:.5px solid rgba(22,163,74,.3);border-radius:var(--r);padding:10px 14px">
+      <div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">They Owe Us</div>
+      <div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--green)">${supFmt(totalOwed)}</div>
+    </div>
+    <div style="flex:1;background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px">
+      <div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Suppliers</div>
+      <div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--text)">${count}</div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// SUPPLIER LIST
+// ════════════════════════════════════════════════════
+function renderSupplierList() {
+  const el     = document.getElementById('sup-list');
+  const search = (document.getElementById('sup-search')?.value||'').toLowerCase();
+  if (!el) return;
+  const filtered = SUP.suppliers.filter(s =>
+    s.name.toLowerCase().includes(search) ||
+    (s.city||'').toLowerCase().includes(search) ||
+    (s.phone||'').includes(search)
+  );
+  if (!filtered.length) {
+    el.innerHTML = '<div style="text-align:center;padding:2rem;font-family:var(--mono);font-size:.85rem;color:var(--hint)">No suppliers found</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(s => {
+    const txns = SUP.txns[s.id] || [];
+    const bal  = computeBalance(s, txns);
+    const balCol   = Math.abs(bal) < 1 ? 'var(--muted)' : bal > 0 ? 'var(--red)' : 'var(--green)';
+    const balLabel = Math.abs(bal) < 1 ? 'Settled' : bal > 0 ? 'We owe' : 'They owe';
+    const lastTxn  = txns.length ? txns[txns.length-1].date : null;
+    return `<div onclick="openSupLedger('${s.id}')"
+      style="background:var(--bg2);border:.5px solid var(--border);border-radius:var(--rl);padding:1rem 1.1rem;margin-bottom:.625rem;cursor:pointer;transition:border-color .15s"
+      onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div style="min-width:0">
+          <div style="font-size:.95rem;font-weight:700;margin-bottom:3px">${s.name}</div>
+          <div style="font-size:.75rem;font-family:var(--mono);color:var(--muted)">
+            ${s.phone?'📞 '+s.phone:''}${s.phone&&s.city?' · ':''}${s.city?'📍 '+s.city:''}
+          </div>
+          ${lastTxn?`<div style="font-size:.68rem;font-family:var(--mono);color:var(--hint);margin-top:3px">Last: ${lastTxn}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:${balCol}">${supFmt(bal)}</div>
+          <div style="font-size:.65rem;font-family:var(--mono);color:${balCol};margin-top:2px">${balLabel}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════
+// SUPPLIER LEDGER
+// ════════════════════════════════════════════════════
+async function openSupLedger(supId) {
+  const sup = SUP.suppliers.find(s => s.id === supId);
+  if (!sup) return;
+  SUP.activeSup = supId;
+
+  // Load txns if not already loaded
+  if (!SUP.txns[supId]) await loadSupTxns(supId);
+
+  document.getElementById('sup-ledger-name').textContent = sup.name;
+  document.getElementById('sup-ledger-screen').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+
+  renderLedgerInfo(sup);
+  renderLedgerBalance(sup);
+  renderLedgerTxns(sup);
+}
+
+function closeSupLedger() {
+  document.getElementById('sup-ledger-screen').style.display = 'none';
+  document.body.style.overflow = '';
+  SUP.activeSup = null;
+  renderSupOverview();
+  renderSupplierList();
+}
+
+function renderLedgerInfo(sup) {
+  const el = document.getElementById('sup-ledger-info');
+  el.innerHTML = `
+    <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);padding:.875rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div>
+        ${sup.phone?`<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted)">📞 <a href="tel:${sup.phone}" style="color:var(--accent);text-decoration:none">${sup.phone}</a></div>`:''}
+        ${sup.city?`<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted);margin-top:2px">📍 ${sup.city}</div>`:''}
+        ${sup.notes?`<div style="font-size:.78rem;font-family:var(--mono);color:var(--hint);margin-top:4px">${sup.notes}</div>`:''}
+      </div>
+      <button onclick="openSupModal('${sup.id}')"
+        style="background:none;border:.5px solid var(--border2);border-radius:var(--r);padding:6px 12px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer">
+        Edit
+      </button>
+    </div>`;
+}
+
+function renderLedgerBalance(sup) {
+  const txns = SUP.txns[sup.id] || [];
+  const bal  = computeBalance(sup, txns);
+  const isSettled = Math.abs(bal) < 1;
+  const weOwe = bal > 0;
+  const col   = isSettled ? 'var(--green)' : weOwe ? 'var(--red)' : 'var(--green)';
+  const label = isSettled ? '✅ Settled' : weOwe ? 'Outstanding — We owe them' : 'Advance — They owe us';
+  const totalPurchased = txns.filter(t=>t.type==='purchase').reduce((s,t)=>s+(t.amount||0),0)
+    + (sup.openingBalance>0 ? sup.openingBalance : 0);
+  const totalPaid = txns.filter(t=>['payment','part_payment','advance'].includes(t.type)).reduce((s,t)=>s+(t.amount||0),0);
+
+  document.getElementById('sup-ledger-balance').innerHTML = `
+    <div style="background:var(--bg2);border:.5px solid ${col};border-radius:var(--rl);padding:1rem 1.1rem">
+      <div style="font-size:.62rem;font-family:var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">${label}</div>
+      <div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:${col};margin-bottom:.875rem">${supFmt(bal)}</div>
+      <div style="display:flex;gap:1rem;font-family:var(--mono);font-size:.78rem">
+        <div><span style="color:var(--muted)">Total Purchased: </span><span style="color:var(--text)">${supFmt(totalPurchased)}</span></div>
+        <div><span style="color:var(--muted)">Total Paid: </span><span style="color:var(--green)">${supFmt(totalPaid)}</span></div>
+      </div>
+    </div>`;
+}
+
+function renderLedgerTxns(sup) {
+  const el   = document.getElementById('sup-ledger-txns');
+  const txns = SUP.txns[sup.id] || [];
+  if (!txns.length && !(sup.openingBalance)) {
+    el.innerHTML = '<div style="font-family:var(--mono);font-size:.82rem;color:var(--hint);padding:8px 0">No transactions yet</div>';
+    return;
+  }
+
+  let runBal = 0;
+  const rows = [];
+
+  // Opening balance row
+  if (sup.openingBalance) {
+    runBal = sup.openingBalance;
+    const col = runBal > 0 ? 'var(--red)' : 'var(--green)';
+    rows.push(`
+      <div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;align-items:center;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem">
+        <div style="color:var(--hint)">Opening</div>
+        <div style="color:var(--muted)">Opening Balance</div>
+        <div style="color:${runBal>0?'var(--red)':'var(--green)'}">${runBal>0?'+':'-'}${supFmt(runBal)}</div>
+        <div style="color:${col};font-weight:600">${supFmt(runBal)}</div>
+      </div>`);
+  }
+
+  txns.forEach(t => {
+    const cfg = TXN_TYPES[t.type] || { label:t.type, icon:'•', sign:+1 };
+    const signed = cfg.sign * (t.amount||0);
+    runBal += signed;
+    const balCol = Math.abs(runBal)<1 ? 'var(--green)' : runBal>0 ? 'var(--red)' : 'var(--green)';
+    const amtCol = signed > 0 ? 'var(--red)' : 'var(--green)';
+    const details = [
+      t.billNo ? 'Bill: '+t.billNo : '',
+      t.mode ? MODE_LABELS[t.mode]||t.mode : '',
+      t.ref  ? 'Ref: '+t.ref : '',
+      t.notes || '',
+    ].filter(Boolean).join(' · ');
+
+    rows.push(`
+      <div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;align-items:start;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem"
+        ${S.role==='owner'?`title="Click to delete" onclick="delTxn('${t.id}','${sup.id}')" style="cursor:pointer;display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;align-items:start;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem"`:''}
+      >
+        <div style="color:var(--hint)">${t.date||''}</div>
+        <div>
+          <div style="color:var(--text)">${cfg.icon} ${cfg.label}</div>
+          ${details?`<div style="color:var(--muted);font-size:.7rem;margin-top:2px">${details}</div>`:''}
+          <div style="color:var(--hint);font-size:.68rem;margin-top:1px">By: ${t.by||'—'}</div>
+        </div>
+        <div style="color:${amtCol};white-space:nowrap">${signed>0?'+':'-'}${supFmt(t.amount)}</div>
+        <div style="color:${balCol};font-weight:600;white-space:nowrap">${supFmt(runBal)}</div>
+      </div>`);
+  });
+
+  // Header row
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:.65rem;color:var(--hint);letter-spacing:.06em;text-transform:uppercase">
+      <div>Date</div><div>Details</div><div>Amount</div><div>Balance</div>
+    </div>
+    ${rows.join('')}
+    ${S.role==='owner'?'<div style="font-size:.65rem;font-family:var(--mono);color:var(--hint);margin-top:8px;text-align:right">Tap row to delete</div>':''}`;
+}
+
+// ════════════════════════════════════════════════════
+// DELETE TRANSACTION
+// ════════════════════════════════════════════════════
+window.delTxn = async function(txnId, supId) {
+  if (S.role !== 'owner') return;
+  if (!confirm('Delete this transaction? This cannot be undone.')) return;
+  try {
+    await db.collection('supplier_txns').doc(txnId).delete();
+    SUP.txns[supId] = SUP.txns[supId].filter(t => t.id !== txnId);
+    const sup = SUP.suppliers.find(s => s.id === supId);
+    if (sup) { renderLedgerBalance(sup); renderLedgerTxns(sup); }
+    renderSupOverview();
+    showToast('Transaction deleted');
+  } catch(e) { showToast('Error: ' + e.message); }
+};
+
+// ════════════════════════════════════════════════════
+// SUPPLIER CREATE / EDIT MODAL
+// ════════════════════════════════════════════════════
+window.openSupModal = function(supId) {
+  SUP.editSupId = supId || null;
+  const sup = supId ? SUP.suppliers.find(s=>s.id===supId) : null;
+  document.getElementById('sup-modal-title').textContent = sup ? 'Edit Supplier' : 'New Supplier';
+  document.getElementById('sup-name').value         = sup?.name   || '';
+  document.getElementById('sup-phone').value        = sup?.phone  || '';
+  document.getElementById('sup-city').value         = sup?.city   || '';
+  document.getElementById('sup-notes-field').value  = sup?.notes  || '';
+  document.getElementById('sup-ob').value           = sup ? Math.abs(sup.openingBalance||0) : '';
+  document.getElementById('sup-modal-error').textContent = '';
+  const dir = sup ? (sup.openingBalance >= 0 ? 'we_owe' : 'they_owe') : 'we_owe';
+  setObDir(dir);
+  document.getElementById('sup-modal').classList.add('open');
+};
+
+window.closeSupModal = function() {
+  document.getElementById('sup-modal').classList.remove('open');
+};
+
+window.setObDir = function(dir) {
+  SUP.obDir = dir;
+  const weOwe   = document.getElementById('sup-ob-we-owe');
+  const theyOwe = document.getElementById('sup-ob-they-owe');
+  if (weOwe)   { weOwe.style.background   = dir==='we_owe'   ? 'var(--red)'    : 'var(--bg3)';   weOwe.style.color   = dir==='we_owe'   ? '#fff' : 'var(--text)';   weOwe.style.borderColor   = dir==='we_owe'   ? 'var(--red)'    : 'var(--border2)'; }
+  if (theyOwe) { theyOwe.style.background = dir==='they_owe' ? 'var(--green)'  : 'var(--bg3)'; theyOwe.style.color = dir==='they_owe' ? '#fff' : 'var(--text)'; theyOwe.style.borderColor = dir==='they_owe' ? 'var(--green)'  : 'var(--border2)'; }
+};
+
+window.saveSupplier = async function() {
+  const name  = document.getElementById('sup-name').value.trim();
+  const phone = document.getElementById('sup-phone').value.trim();
+  const city  = document.getElementById('sup-city').value.trim();
+  const notes = document.getElementById('sup-notes-field').value.trim();
+  const ob    = parseFloat(document.getElementById('sup-ob').value) || 0;
+  const err   = document.getElementById('sup-modal-error');
+  err.textContent = '';
+  if (!name) { err.textContent = 'Supplier name is required.'; return; }
+
+  const signedOb = SUP.obDir === 'we_owe' ? ob : -ob;
+  const data = {
+    name, phone, city, notes,
+    openingBalance: signedOb,
+    storeId: STORE_ID,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+
+  try {
+    const btn = document.getElementById('sup-modal-save');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    if (SUP.editSupId) {
+      await db.collection('suppliers').doc(SUP.editSupId).set(data, { merge: true });
+      const i = SUP.suppliers.findIndex(s=>s.id===SUP.editSupId);
+      if (i>=0) SUP.suppliers[i] = { ...SUP.suppliers[i], ...data };
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      const ref = await db.collection('suppliers').add(data);
+      SUP.suppliers.push({ id: ref.id, ...data });
+      SUP.suppliers.sort((a,b)=>a.name.localeCompare(b.name));
+    }
+    btn.disabled = false; btn.textContent = 'Save Supplier';
+    closeSupModal();
+    renderSupOverview();
+    renderSupplierList();
+    showToast(SUP.editSupId ? 'Supplier updated' : 'Supplier added');
+    SUP.editSupId = null;
+  } catch(e) {
+    document.getElementById('sup-modal-save').disabled = false;
+    document.getElementById('sup-modal-save').textContent = 'Save Supplier';
+    err.textContent = 'Error: ' + e.message;
+  }
+};
+
+// ════════════════════════════════════════════════════
+// TRANSACTION MODAL
+// ════════════════════════════════════════════════════
+window.openTxnModal = function() {
+  if (!SUP.activeSup) return;
+  document.getElementById('txn-type').value  = 'purchase';
+  document.getElementById('txn-amt').value   = '';
+  document.getElementById('txn-billno').value= '';
+  document.getElementById('txn-mode').value  = 'cash';
+  document.getElementById('txn-ref').value   = '';
+  document.getElementById('txn-date').value  = dateKey();
+  document.getElementById('txn-notes').value = '';
+  document.getElementById('txn-modal-error').textContent = '';
+  onTxnTypeChange();
+  document.getElementById('txn-modal').classList.add('open');
+};
+
+window.closeTxnModal = function() {
+  document.getElementById('txn-modal').classList.remove('open');
+};
+
+window.onTxnTypeChange = function() {
+  const type = document.getElementById('txn-type').value;
+  const cfg  = TXN_TYPES[type] || {};
+  document.getElementById('txn-mode-wrap').style.display = cfg.showMode ? '' : 'none';
+  document.getElementById('txn-ref-wrap').style.display  = cfg.showMode ? '' : 'none';
+  document.getElementById('txn-billno-wrap').style.display = cfg.showBill ? '' : 'none';
+};
+
+window.saveTxn = async function() {
+  const supId  = SUP.activeSup;
+  const type   = document.getElementById('txn-type').value;
+  const amt    = parseFloat(document.getElementById('txn-amt').value) || 0;
+  const billNo = document.getElementById('txn-billno').value.trim();
+  const mode   = document.getElementById('txn-mode').value;
+  const ref    = document.getElementById('txn-ref').value.trim();
+  const date   = document.getElementById('txn-date').value || dateKey();
+  const notes  = document.getElementById('txn-notes').value.trim();
+  const err    = document.getElementById('txn-modal-error');
+  err.textContent = '';
+  if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; return; }
+
+  const cfg  = TXN_TYPES[type] || {};
+  const data = {
+    supplierId: supId,
+    storeId:    STORE_ID,
+    type, amt, amount: amt,
+    date, notes,
+    by: S.user?.displayName || S.user?.email || 'Staff',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  if (cfg.showBill && billNo) data.billNo = billNo;
+  if (cfg.showMode) { data.mode = mode; if (ref) data.ref = ref; }
+
+  try {
+    const btn = document.getElementById('txn-modal-save');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const docRef = await db.collection('supplier_txns').add(data);
+    if (!SUP.txns[supId]) SUP.txns[supId] = [];
+    SUP.txns[supId].push({ id: docRef.id, ...data });
+    SUP.txns[supId].sort((a,b)=>a.date.localeCompare(b.date));
+    btn.disabled = false; btn.textContent = 'Save Transaction';
+    closeTxnModal();
+    const sup = SUP.suppliers.find(s=>s.id===supId);
+    if (sup) { renderLedgerBalance(sup); renderLedgerTxns(sup); }
+    renderSupOverview();
+    showToast(TXN_TYPES[type]?.label + ' saved — ' + supFmt(amt));
+  } catch(e) {
+    document.getElementById('txn-modal-save').disabled = false;
+    document.getElementById('txn-modal-save').textContent = 'Save Transaction';
+    err.textContent = 'Error: ' + e.message;
+  }
+};
+
+// ════════════════════════════════════════════════════
+// SUPPLIER REPORTS
+// ════════════════════════════════════════════════════
+async function renderSupReport() {
+  const el = document.getElementById('sup-report-content');
+  el.innerHTML = '<div class="spinner"></div>';
+
+  // Load all txns for all suppliers
+  await Promise.all(SUP.suppliers.map(async s => {
+    if (!SUP.txns[s.id]) await loadSupTxns(s.id);
+  }));
+
+  // Build report rows
+  const rows = SUP.suppliers.map(s => {
+    const txns  = SUP.txns[s.id] || [];
+    const bal   = computeBalance(s, txns);
+    const purchased = txns.filter(t=>t.type==='purchase').reduce((sum,t)=>sum+(t.amount||0),0)
+      + (s.openingBalance>0 ? s.openingBalance : 0);
+    const paid  = txns.filter(t=>['payment','part_payment','advance'].includes(t.type)).reduce((sum,t)=>sum+(t.amount||0),0);
+    const lastTxn = txns.length ? txns[txns.length-1].date : '—';
+    return { s, bal, purchased, paid, lastTxn };
+  }).sort((a,b) => b.bal - a.bal); // highest outstanding first
+
+  const totalOwe  = rows.filter(r=>r.bal>0).reduce((s,r)=>s+r.bal,0);
+  const totalOwed = rows.filter(r=>r.bal<0).reduce((s,r)=>s+Math.abs(r.bal),0);
+
+  el.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <div style="flex:1;background:var(--bg2);border:.5px solid rgba(220,38,38,.3);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Total We Owe</div>
+        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--red)">${supFmt(totalOwe)}</div>
+      </div>
+      <div style="flex:1;background:var(--bg2);border:.5px solid rgba(22,163,74,.3);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Total They Owe</div>
+        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--green)">${supFmt(totalOwed)}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Supplier-wise Outstanding</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.78rem">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border2);color:var(--hint);font-size:.65rem;text-transform:uppercase;letter-spacing:.06em">
+              <th style="padding:6px 4px;text-align:left;font-weight:600">Supplier</th>
+              <th style="padding:6px 4px;text-align:right;font-weight:600">Purchased</th>
+              <th style="padding:6px 4px;text-align:right;font-weight:600">Paid</th>
+              <th style="padding:6px 4px;text-align:right;font-weight:600">Balance</th>
+              <th style="padding:6px 4px;text-align:right;font-weight:600">Last Txn</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(({s,bal,purchased,paid,lastTxn})=>{
+              const col = Math.abs(bal)<1?'var(--muted)':bal>0?'var(--red)':'var(--green)';
+              const balLabel = Math.abs(bal)<1?'Settled':bal>0?supFmt(bal):'-'+supFmt(bal);
+              return `<tr style="border-bottom:.5px solid var(--border);cursor:pointer" onclick="openSupLedger('${s.id}');supSwitchTab('list')"
+                onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+                <td style="padding:8px 4px">
+                  <div style="font-weight:600;color:var(--text)">${s.name}</div>
+                  ${s.city?`<div style="font-size:.68rem;color:var(--hint)">${s.city}</div>`:''}
+                </td>
+                <td style="padding:8px 4px;text-align:right;color:var(--text)">${supFmt(purchased)}</td>
+                <td style="padding:8px 4px;text-align:right;color:var(--green)">${supFmt(paid)}</td>
+                <td style="padding:8px 4px;text-align:right;color:${col};font-weight:700">${balLabel}</td>
+                <td style="padding:8px 4px;text-align:right;color:var(--hint)">${lastTxn}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// HOOK INTO NAV TAB SWITCHING
+// ════════════════════════════════════════════════════
+document.getElementById('tab-suppliers')?.addEventListener('click', () => {
+  initSuppliers();
+});
+
 if ('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com') {
   navigator.serviceWorker.register('/sw.js')
     .then(() => console.log('SW registered'))
