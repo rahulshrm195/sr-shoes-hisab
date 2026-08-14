@@ -1,5 +1,5 @@
-// SR Shoes Hisab — Service Worker v5
-const CACHE = 'hisab-v5';
+// SR Shoes Hisab — Service Worker v6
+const CACHE = 'hisab-v6';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
