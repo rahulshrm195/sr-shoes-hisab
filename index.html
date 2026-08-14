@@ -3429,19 +3429,21 @@ function computeBalance(supplier, txns) {
 // ════════════════════════════════════════════════════
 async function loadSuppliers() {
   try {
-    const snap = await supCol().orderBy('name').get();
+    const snap = await db.collection('suppliers').where('storeId','==',STORE_ID).get();
     SUP.suppliers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch(e) { console.warn('Load suppliers:', e); }
+    SUP.suppliers.sort(function(a,b){ return a.name.localeCompare(b.name); });
+  } catch(e) { console.warn('Load suppliers:', e.message); }
 }
 
 async function loadSupTxns(supplierId) {
   try {
-    const snap = await txnCol()
+    const snap = await db.collection('supplier_txns')
+      .where('storeId','==',STORE_ID)
       .where('supplierId','==',supplierId)
-      .orderBy('date','asc')
       .get();
     SUP.txns[supplierId] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch(e) { console.warn('Load txns:', e); SUP.txns[supplierId] = []; }
+    SUP.txns[supplierId].sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+  } catch(e) { console.warn('Load txns:', e.message); SUP.txns[supplierId] = []; }
 }
 
 // ════════════════════════════════════════════════════
