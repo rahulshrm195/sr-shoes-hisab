@@ -3838,72 +3838,80 @@ window.saveTxn = async function() {
 // SUPPLIER REPORTS
 // ════════════════════════════════════════════════════
 async function renderSupReport() {
-  const el = document.getElementById('sup-report-content');
-  el.innerHTML = '<div class="spinner"></div>';
+  var el = document.getElementById('sup-report-content');
+  el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:.85rem">Loading...</div>';
 
   // Load all txns for all suppliers
-  await Promise.all(SUP.suppliers.map(async s => {
-    if (!SUP.txns[s.id]) await loadSupTxns(s.id);
+  await Promise.all(SUP.suppliers.map(function(s) {
+    if (!SUP.txns[s.id]) return loadSupTxns(s.id);
+    return Promise.resolve();
   }));
 
   // Build report rows
-  const rows = SUP.suppliers.map(s => {
-    const txns  = SUP.txns[s.id] || [];
-    const bal   = computeBalance(s, txns);
-    const purchased = txns.filter(t=>t.type==='purchase').reduce((sum,t)=>sum+(t.amount||0),0)
+  var rows = SUP.suppliers.map(function(s) {
+    var txns  = SUP.txns[s.id] || [];
+    var bal   = computeBalance(s, txns);
+    var purchased = txns.filter(function(t){return t.type==='purchase';}).reduce(function(sum,t){return sum+(t.amount||0);},0)
       + (s.openingBalance>0 ? s.openingBalance : 0);
-    const paid  = txns.filter(t=>['payment','part_payment','advance'].includes(t.type)).reduce((sum,t)=>sum+(t.amount||0),0);
-    const lastTxn = txns.length ? txns[txns.length-1].date : '—';
-    return { s, bal, purchased, paid, lastTxn };
-  }).sort((a,b) => b.bal - a.bal); // highest outstanding first
+    var paid = txns.filter(function(t){return t.type==='payment'||t.type==='part_payment'||t.type==='advance';}).reduce(function(sum,t){return sum+(t.amount||0);},0);
+    var lastTxn = txns.length ? txns[txns.length-1].date : '—';
+    return { s:s, bal:bal, purchased:purchased, paid:paid, lastTxn:lastTxn };
+  }).sort(function(a,b){ return b.bal - a.bal; });
 
-  const totalOwe  = rows.filter(r=>r.bal>0).reduce((s,r)=>s+r.bal,0);
-  const totalOwed = rows.filter(r=>r.bal<0).reduce((s,r)=>s+Math.abs(r.bal),0);
+  var totalOwe  = rows.filter(function(r){return r.bal>0;}).reduce(function(s,r){return s+r.bal;},0);
+  var totalOwed = rows.filter(function(r){return r.bal<0;}).reduce(function(s,r){return s+Math.abs(r.bal);},0);
 
-  el.innerHTML = `
-    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
-      <div style="flex:1;background:var(--bg2);border:.5px solid rgba(220,38,38,.3);border-radius:var(--r);padding:10px 14px">
-        <div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Total We Owe</div>
-        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--red)">${supFmt(totalOwe)}</div>
-      </div>
-      <div style="flex:1;background:var(--bg2);border:.5px solid rgba(22,163,74,.3);border-radius:var(--r);padding:10px 14px">
-        <div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Total They Owe</div>
-        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--green)">${supFmt(totalOwed)}</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Supplier-wise Outstanding</div>
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.78rem">
-          <thead>
-            <tr style="border-bottom:1px solid var(--border2);color:var(--hint);font-size:.65rem;text-transform:uppercase;letter-spacing:.06em">
-              <th style="padding:6px 4px;text-align:left;font-weight:600">Supplier</th>
-              <th style="padding:6px 4px;text-align:right;font-weight:600">Purchased</th>
-              <th style="padding:6px 4px;text-align:right;font-weight:600">Paid</th>
-              <th style="padding:6px 4px;text-align:right;font-weight:600">Balance</th>
-              <th style="padding:6px 4px;text-align:right;font-weight:600">Last Txn</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(({s,bal,purchased,paid,lastTxn})=>{
-              const col = Math.abs(bal)<1?'var(--muted)':bal>0?'var(--red)':'var(--green)';
-              const balLabel = Math.abs(bal)<1?'Settled':bal>0?supFmt(bal):'-'+supFmt(bal);
-              return `<tr style="border-bottom:.5px solid var(--border);cursor:pointer" onclick="openSupLedger('${s.id}');supSwitchTab('list')"
-                onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-                <td style="padding:8px 4px">
-                  <div style="font-weight:600;color:var(--text)">${s.name}</div>
-                  ' + (s.city ? '<div style="font-size:.68rem;color:var(--hint)">'+s.city+'</div>' : '') + '
-                </td>
-                <td style="padding:8px 4px;text-align:right;color:var(--text)">${supFmt(purchased)}</td>
-                <td style="padding:8px 4px;text-align:right;color:var(--green)">${supFmt(paid)}</td>
-                <td style="padding:8px 4px;text-align:right;color:${col};font-weight:700">${balLabel}</td>
-                <td style="padding:8px 4px;text-align:right;color:var(--hint)">${lastTxn}</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+  // Build table rows safely — no nested template literals
+  var tbodyHtml = '';
+  rows.forEach(function(row) {
+    var s = row.s; var bal = row.bal; var purchased = row.purchased; var paid = row.paid; var lastTxn = row.lastTxn;
+    var col      = Math.abs(bal)<1 ? 'var(--muted)' : bal>0 ? 'var(--red)' : 'var(--green)';
+    var balLabel = Math.abs(bal)<1 ? 'Settled' : bal>0 ? supFmt(bal) : '-'+supFmt(bal);
+    var cityHtml = s.city ? '<div style="font-size:.68rem;color:var(--hint)">'+s.city+'</div>' : '';
+    tbodyHtml +=
+      '<tr style="border-bottom:.5px solid var(--border);cursor:pointer"' +
+        ' onclick="openSupLedger(\''+s.id+'\');supSwitchTab(\'list\')"' +
+        ' onmouseover="this.style.background=\'var(--bg3)\'"' +
+        ' onmouseout="this.style.background=\'\'">' +
+        '<td style="padding:8px 4px">' +
+          '<div style="font-weight:600;color:var(--text)">'+s.name+'</div>' +
+          cityHtml +
+        '</td>' +
+        '<td style="padding:8px 4px;text-align:right;color:var(--text)">'+supFmt(purchased)+'</td>' +
+        '<td style="padding:8px 4px;text-align:right;color:var(--green)">'+supFmt(paid)+'</td>' +
+        '<td style="padding:8px 4px;text-align:right;color:'+col+';font-weight:700">'+balLabel+'</td>' +
+        '<td style="padding:8px 4px;text-align:right;color:var(--hint)">'+lastTxn+'</td>' +
+      '</tr>';
+  });
+
+  el.innerHTML =
+    '<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">' +
+      '<div style="flex:1;background:var(--bg2);border:.5px solid rgba(220,38,38,.3);border-radius:var(--r);padding:10px 14px">' +
+        '<div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Total We Owe</div>' +
+        '<div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--red)">'+supFmt(totalOwe)+'</div>' +
+      '</div>' +
+      '<div style="flex:1;background:var(--bg2);border:.5px solid rgba(22,163,74,.3);border-radius:var(--r);padding:10px 14px">' +
+        '<div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Total They Owe</div>' +
+        '<div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--green)">'+supFmt(totalOwed)+'</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="card-title">Supplier-wise Outstanding</div>' +
+      '<div style="overflow-x:auto">' +
+        '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.78rem">' +
+          '<thead>' +
+            '<tr style="border-bottom:1px solid var(--border2);color:var(--hint);font-size:.65rem;text-transform:uppercase;letter-spacing:.06em">' +
+              '<th style="padding:6px 4px;text-align:left;font-weight:600">Supplier</th>' +
+              '<th style="padding:6px 4px;text-align:right;font-weight:600">Purchased</th>' +
+              '<th style="padding:6px 4px;text-align:right;font-weight:600">Paid</th>' +
+              '<th style="padding:6px 4px;text-align:right;font-weight:600">Balance</th>' +
+              '<th style="padding:6px 4px;text-align:right;font-weight:600">Last Txn</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' + tbodyHtml + '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>';
 }
 
 // ════════════════════════════════════════════════════
