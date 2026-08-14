@@ -490,7 +490,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.8.0</div>
+  <div class="auth-ver">v1.8.1</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -513,7 +513,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.8.0</div>
+    <div class="topbar-ver">v1.8.1</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -961,6 +961,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         </div>
         <div id="sup-modal-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);min-height:1em;margin-bottom:6px"></div>
         <button class="btn-save" id="sup-modal-save" onclick="saveSupplier()">Save Supplier</button>
+        <button id="sup-modal-delete" onclick="deleteSupplier()" style="display:none;width:100%;margin-top:8px;padding:10px;background:var(--red-dim,rgba(220,38,38,0.1));border:1px solid rgba(220,38,38,0.3);border-radius:var(--r);color:var(--red);font-family:var(--sans);font-size:.9rem;font-weight:600;cursor:pointer">Delete Supplier</button>
       </div>
     </div>
 
@@ -971,17 +972,27 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
           <span id="txn-modal-title">Add Transaction</span>
           <button class="modal-close" onclick="closeTxnModal()">&#10005;</button>
         </div>
-        <label>Type</label>
+
+        <!-- Direction toggle — Purchase side vs Payment side -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <button id="txn-dir-purchase" onclick="setTxnDir('purchase')"
+            style="padding:10px 8px;border-radius:var(--r);border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-family:var(--sans);font-size:.85rem;font-weight:700;cursor:pointer">
+            &#128230; Purchase / Credit
+          </button>
+          <button id="txn-dir-payment" onclick="setTxnDir('payment')"
+            style="padding:10px 8px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg3,var(--bg2));color:var(--text);font-family:var(--sans);font-size:.85rem;font-weight:600;cursor:pointer">
+            &#128181; Payment / Settlement
+          </button>
+        </div>
+
+        <!-- Sub-type select — changes based on direction -->
+        <label>Sub-type</label>
         <select id="txn-type" onchange="onTxnTypeChange()">
-          <option value="purchase">📦 Purchase (credit)</option>
-          <option value="payment">💵 Payment made</option>
-          <option value="part_payment">🔄 Part payment</option>
-          <option value="return">↩️ Return</option>
-          <option value="advance">⬆️ Advance payment</option>
-          <option value="debit_note">📋 Debit note (our claim)</option>
-          <option value="credit_note">📋 Credit note (their adjustment)</option>
+          <option value="purchase">Purchase on credit</option>
+          <option value="credit_note">Credit note (their adjustment)</option>
         </select>
-        <label>Amount (₹) *</label>
+
+        <label>Amount (&#8377;) *</label>
         <input type="number" id="txn-amt" placeholder="0" inputmode="numeric">
         <div id="txn-billno-wrap">
           <label>Bill / Invoice No (optional)</label>
@@ -1166,7 +1177,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.8.0</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.8.1</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -3571,41 +3582,37 @@ function closeSupLedger() {
 }
 
 function renderLedgerInfo(sup) {
-  const el = document.getElementById('sup-ledger-info');
-  el.innerHTML = `
-    <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);padding:.875rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:10px">
-      <div>
-        ' + (sup.phone ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted)">📞 <a href="tel:'+sup.phone+'" style="color:var(--accent);text-decoration:none">'+sup.phone+'</a></div>' : '') + '
-        ' + (sup.city  ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted);margin-top:2px">📍 '+sup.city+'</div>' : '') + '
-        ' + (sup.notes ? '<div style="font-size:.78rem;font-family:var(--mono);color:var(--hint);margin-top:4px">'+sup.notes+'</div>' : '') + '
-      </div>
-      <button onclick="openSupModal('${sup.id}')"
-        style="background:none;border:.5px solid var(--border2);border-radius:var(--r);padding:6px 12px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer">
-        Edit
-      </button>
-    </div>`;
+  var el = document.getElementById('sup-ledger-info');
+  var phoneHtml = sup.phone ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted)">&#128222; <a href="tel:' + sup.phone + '" style="color:var(--accent);text-decoration:none">' + sup.phone + '</a></div>' : '';
+  var cityHtml  = sup.city  ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted);margin-top:2px">&#128205; ' + sup.city + '</div>' : '';
+  var notesHtml = sup.notes ? '<div style="font-size:.78rem;font-family:var(--mono);color:var(--hint);margin-top:4px">' + sup.notes + '</div>' : '';
+  el.innerHTML =
+    '<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);padding:.875rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:10px">' +
+      '<div>' + phoneHtml + cityHtml + notesHtml + '</div>' +
+      '<button onclick="openSupModal(\'' + (sup.id||'') + '\')" style="background:none;border:.5px solid var(--border2);border-radius:var(--r);padding:6px 12px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer">Edit</button>' +
+    '</div>';
 }
 
 function renderLedgerBalance(sup) {
-  const txns = SUP.txns[sup.id] || [];
-  const bal  = computeBalance(sup, txns);
-  const isSettled = Math.abs(bal) < 1;
-  const weOwe = bal > 0;
-  const col   = isSettled ? 'var(--green)' : weOwe ? 'var(--red)' : 'var(--green)';
-  const label = isSettled ? '✅ Settled' : weOwe ? 'Outstanding — We owe them' : 'Advance — They owe us';
-  const totalPurchased = txns.filter(t=>t.type==='purchase').reduce((s,t)=>s+(t.amount||0),0)
+  var txns = SUP.txns[sup.id] || [];
+  var bal  = computeBalance(sup, txns);
+  var isSettled = Math.abs(bal) < 1;
+  var weOwe = bal > 0;
+  var col   = isSettled ? 'var(--green)' : weOwe ? 'var(--red)' : 'var(--green)';
+  var label = isSettled ? '&#10003; Settled' : weOwe ? 'Outstanding &mdash; We owe them' : 'Advance &mdash; They owe us';
+  var totalPurchased = txns.filter(function(t){return t.type==='purchase';}).reduce(function(s,t){return s+(t.amount||0);},0)
     + (sup.openingBalance>0 ? sup.openingBalance : 0);
-  const totalPaid = txns.filter(t=>['payment','part_payment','advance'].includes(t.type)).reduce((s,t)=>s+(t.amount||0),0);
+  var totalPaid = txns.filter(function(t){return t.type==='payment'||t.type==='part_payment'||t.type==='advance';}).reduce(function(s,t){return s+(t.amount||0);},0);
 
-  document.getElementById('sup-ledger-balance').innerHTML = `
-    <div style="background:var(--bg2);border:.5px solid ${col};border-radius:var(--rl);padding:1rem 1.1rem">
-      <div style="font-size:.62rem;font-family:var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">${label}</div>
-      <div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:${col};margin-bottom:.875rem">${supFmt(bal)}</div>
-      <div style="display:flex;gap:1rem;font-family:var(--mono);font-size:.78rem">
-        <div><span style="color:var(--muted)">Total Purchased: </span><span style="color:var(--text)">${supFmt(totalPurchased)}</span></div>
-        <div><span style="color:var(--muted)">Total Paid: </span><span style="color:var(--green)">${supFmt(totalPaid)}</span></div>
-      </div>
-    </div>`;
+  document.getElementById('sup-ledger-balance').innerHTML =
+    '<div style="background:var(--bg2);border:.5px solid ' + col + ';border-radius:var(--rl);padding:1rem 1.1rem">' +
+      '<div style="font-size:.62rem;font-family:var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">' + label + '</div>' +
+      '<div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:' + col + ';margin-bottom:.875rem">' + supFmt(bal) + '</div>' +
+      '<div style="display:flex;gap:1rem;font-family:var(--mono);font-size:.78rem">' +
+        '<div><span style="color:var(--muted)">Total Purchased: </span><span style="color:var(--text)">' + supFmt(totalPurchased) + '</span></div>' +
+        '<div><span style="color:var(--muted)">Total Paid: </span><span style="color:var(--green)">' + supFmt(totalPaid) + '</span></div>' +
+      '</div>' +
+    '</div>';
 }
 
 function renderLedgerTxns(sup) {
@@ -3622,14 +3629,16 @@ function renderLedgerTxns(sup) {
   // Opening balance row
   if (sup.openingBalance) {
     runBal = sup.openingBalance;
-    const col = runBal > 0 ? 'var(--red)' : 'var(--green)';
-    rows.push(`
-      <div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;align-items:center;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem">
-        <div style="color:var(--hint)">Opening</div>
-        <div style="color:var(--muted)">Opening Balance</div>
-        <div style="color:${runBal>0?'var(--red)':'var(--green)'}">${runBal>0?'+':'-'}${supFmt(runBal)}</div>
-        <div style="color:${col};font-weight:600">${supFmt(runBal)}</div>
-      </div>`);
+    var obCol = runBal > 0 ? 'var(--red)' : 'var(--green)';
+    var obSign = runBal > 0 ? '+' : '-';
+    rows.push(
+      '<div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;align-items:center;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem">' +
+        '<div style="color:var(--hint)">Opening</div>' +
+        '<div style="color:var(--muted)">Opening Balance</div>' +
+        '<div style="color:' + obCol + '">' + obSign + supFmt(runBal) + '</div>' +
+        '<div style="color:' + obCol + ';font-weight:600">' + supFmt(runBal) + '</div>' +
+      '</div>'
+    );
   }
 
   txns.forEach(t => {
@@ -3706,6 +3715,9 @@ window.openSupModal = function(supId) {
   document.getElementById('sup-notes-field').value  = sup?.notes  || '';
   document.getElementById('sup-ob').value           = sup ? Math.abs(sup.openingBalance||0) : '';
   document.getElementById('sup-modal-error').textContent = '';
+  // Show delete button only when editing AND owner
+  var delBtn = document.getElementById('sup-modal-delete');
+  if (delBtn) delBtn.style.display = (sup && S.role === 'owner') ? 'block' : 'none';
   const dir = sup ? (sup.openingBalance >= 0 ? 'we_owe' : 'they_owe') : 'we_owe';
   setObDir(dir);
   document.getElementById('sup-modal').classList.add('open');
@@ -3768,11 +3780,45 @@ window.saveSupplier = async function() {
 };
 
 // ════════════════════════════════════════════════════
-// TRANSACTION MODAL
+// DELETE SUPPLIER (owner only)
 // ════════════════════════════════════════════════════
+window.deleteSupplier = async function() {
+  if (S.role !== 'owner') { showToast('Owner access required'); return; }
+  var supId = SUP.editSupId;
+  var sup   = SUP.suppliers.find(function(s){ return s.id === supId; });
+  if (!sup) return;
+  if (!confirm('Delete "' + sup.name + '"?\n\nThis will permanently delete the supplier and ALL their transactions. This cannot be undone.')) return;
+  try {
+    var btn = document.getElementById('sup-modal-save');
+    btn.disabled = true;
+    // Delete all transactions for this supplier
+    var txnSnap = await db.collection('supplier_txns')
+      .where('storeId','==',STORE_ID)
+      .where('supplierId','==',supId)
+      .get();
+    var batch = db.batch();
+    txnSnap.forEach(function(d){ batch.delete(d.ref); });
+    // Delete supplier doc
+    batch.delete(db.collection('suppliers').doc(supId));
+    await batch.commit();
+    // Remove from local state
+    SUP.suppliers = SUP.suppliers.filter(function(s){ return s.id !== supId; });
+    delete SUP.txns[supId];
+    btn.disabled = false;
+    closeSupModal();
+    // Close ledger if open
+    if (SUP.activeSup === supId) closeSupLedger();
+    renderSupOverview();
+    renderSupplierList();
+    showToast('"' + sup.name + '" deleted');
+    SUP.editSupId = null;
+  } catch(e) {
+    document.getElementById('sup-modal-save').disabled = false;
+    document.getElementById('sup-modal-error').textContent = 'Error: ' + e.message;
+  }
+};
 window.openTxnModal = function() {
   if (!SUP.activeSup) return;
-  document.getElementById('txn-type').value  = 'purchase';
   document.getElementById('txn-amt').value   = '';
   document.getElementById('txn-billno').value= '';
   document.getElementById('txn-mode').value  = 'cash';
@@ -3780,7 +3826,7 @@ window.openTxnModal = function() {
   document.getElementById('txn-date').value  = dateKey();
   document.getElementById('txn-notes').value = '';
   document.getElementById('txn-modal-error').textContent = '';
-  onTxnTypeChange();
+  setTxnDir('purchase'); // default to purchase side
   document.getElementById('txn-modal').classList.add('open');
 };
 
@@ -3788,12 +3834,50 @@ window.closeTxnModal = function() {
   document.getElementById('txn-modal').classList.remove('open');
 };
 
+// Purchase options — balance goes UP (we owe more)
+var TXN_PURCHASE_OPTS = [
+  { value: 'purchase',    label: 'Purchase on credit' },
+  { value: 'credit_note', label: 'Credit note (their adjustment)' },
+];
+// Payment options — balance goes DOWN (we owe less)
+var TXN_PAYMENT_OPTS = [
+  { value: 'payment',     label: 'Full payment' },
+  { value: 'part_payment',label: 'Part payment' },
+  { value: 'advance',     label: 'Advance payment' },
+  { value: 'return',      label: 'Return (goods sent back)' },
+  { value: 'debit_note',  label: 'Debit note (our claim)' },
+];
+
+window.setTxnDir = function(dir) {
+  var isPurchase = dir === 'purchase';
+  // Style toggle buttons
+  var pb = document.getElementById('txn-dir-purchase');
+  var pyb = document.getElementById('txn-dir-payment');
+  if (pb) {
+    pb.style.background   = isPurchase ? 'var(--accent)' : 'var(--bg3,var(--bg2))';
+    pb.style.color        = isPurchase ? '#fff' : 'var(--text)';
+    pb.style.borderColor  = isPurchase ? 'var(--accent)' : 'var(--border2)';
+  }
+  if (pyb) {
+    pyb.style.background  = !isPurchase ? 'var(--accent)' : 'var(--bg3,var(--bg2))';
+    pyb.style.color       = !isPurchase ? '#fff' : 'var(--text)';
+    pyb.style.borderColor = !isPurchase ? 'var(--accent)' : 'var(--border2)';
+  }
+  // Populate sub-type dropdown
+  var sel = document.getElementById('txn-type');
+  var opts = isPurchase ? TXN_PURCHASE_OPTS : TXN_PAYMENT_OPTS;
+  sel.innerHTML = opts.map(function(o) {
+    return '<option value="' + o.value + '">' + o.label + '</option>';
+  }).join('');
+  onTxnTypeChange();
+};
+
 window.onTxnTypeChange = function() {
   const type = document.getElementById('txn-type').value;
   const cfg  = TXN_TYPES[type] || {};
-  document.getElementById('txn-mode-wrap').style.display = cfg.showMode ? '' : 'none';
-  document.getElementById('txn-ref-wrap').style.display  = cfg.showMode ? '' : 'none';
-  document.getElementById('txn-billno-wrap').style.display = cfg.showBill ? '' : 'none';
+  document.getElementById('txn-mode-wrap').style.display    = cfg.showMode ? '' : 'none';
+  document.getElementById('txn-ref-wrap').style.display     = cfg.showMode ? '' : 'none';
+  document.getElementById('txn-billno-wrap').style.display  = cfg.showBill ? '' : 'none';
 };
 
 window.saveTxn = async function() {
