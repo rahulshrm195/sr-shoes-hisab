@@ -1947,6 +1947,8 @@ function applyRole() {
   }
   // Show day-closed screen for staff if today is already closed
   if (!isOwner) checkDayClosed();
+  // Preload supplier data in background so it's ready when tab is clicked
+  loadSuppliers().then(function() { renderSupOverview(); });
 }
 
 // ════════════════════════════════════════════════════
@@ -2106,6 +2108,7 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     document.getElementById('section-' + tab.dataset.tab).classList.add('active');
     if (tab.dataset.tab === 'summary')   updateSummaryTab();
     if (tab.dataset.tab === 'reports')   loadMonthly();
+    if (tab.dataset.tab === 'suppliers') initSuppliers();
     // deactivate gear when switching tabs
     document.getElementById('topbar-gear').classList.remove('active');
   });
@@ -3648,13 +3651,14 @@ function renderLedgerTxns(sup) {
     );
   });
 
-  // Header row
-  el.innerHTML = `
-    <div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:.65rem;color:var(--hint);letter-spacing:.06em;text-transform:uppercase">
-      <div>Date</div><div>Details</div><div>Amount</div><div>Balance</div>
-    </div>
-    ${rows.join('')}
-    ${S.role==='owner'?'<div style="font-size:.65rem;font-family:var(--mono);color:var(--hint);margin-top:8px;text-align:right">Tap row to delete</div>':''}`;
+  // Header row — no nested template literals (Safari safe)
+  var deleteHint = S.role==='owner' ? '<div style="font-size:.65rem;font-family:var(--mono);color:var(--hint);margin-top:8px;text-align:right">Tap row to delete</div>' : '';
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:.65rem;color:var(--hint);letter-spacing:.06em;text-transform:uppercase">' +
+      '<div>Date</div><div>Details</div><div>Amount</div><div>Balance</div>' +
+    '</div>' +
+    rows.join('') +
+    deleteHint;
 }
 
 // ════════════════════════════════════════════════════
