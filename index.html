@@ -1908,7 +1908,7 @@ async function boot() {
   }
   // Re-render lists now that role is known — delete buttons show correctly
   renderExpenses();
-  renderCashIn();
+  if (typeof renderCashIn === 'function') renderCashIn();
 }
 
 async function loadRole() {
@@ -3984,7 +3984,7 @@ async function onAppFocus() {
     buildDenoms('open-denoms',  calcOpening);
     buildDenoms('close-denoms', calcClosing);
     renderExpenses();
-    renderCashIn();
+    if (typeof renderCashIn === 'function') renderCashIn();
     calcClosing();
     updateStatsBar();
     updateSummaryTab();
