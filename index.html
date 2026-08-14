@@ -490,7 +490,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.7.8</div>
+  <div class="auth-ver">v1.7.9</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -513,7 +513,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.7.8</div>
+    <div class="topbar-ver">v1.7.9</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -1166,7 +1166,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.7.8</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.7.9</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -3497,42 +3497,47 @@ function renderSupOverview() {
 // SUPPLIER LIST
 // ════════════════════════════════════════════════════
 function renderSupplierList() {
-  const el     = document.getElementById('sup-list');
-  const search = (document.getElementById('sup-search')?.value||'').toLowerCase();
+  var el     = document.getElementById('sup-list');
+  var search = (document.getElementById('sup-search') ? document.getElementById('sup-search').value : '').toLowerCase();
   if (!el) return;
-  const filtered = SUP.suppliers.filter(s =>
-    s.name.toLowerCase().includes(search) ||
-    (s.city||'').toLowerCase().includes(search) ||
-    (s.phone||'').includes(search)
-  );
+  var filtered = SUP.suppliers.filter(function(s) {
+    return s.name.toLowerCase().includes(search) ||
+      (s.city||'').toLowerCase().includes(search) ||
+      (s.phone||'').includes(search);
+  });
   if (!filtered.length) {
     el.innerHTML = '<div style="text-align:center;padding:2rem;font-family:var(--mono);font-size:.85rem;color:var(--hint)">No suppliers found</div>';
     return;
   }
-  el.innerHTML = filtered.map(s => {
-    const txns = SUP.txns[s.id] || [];
-    const bal  = computeBalance(s, txns);
-    const balCol   = Math.abs(bal) < 1 ? 'var(--muted)' : bal > 0 ? 'var(--red)' : 'var(--green)';
-    const balLabel = Math.abs(bal) < 1 ? 'Settled' : bal > 0 ? 'We owe' : 'They owe';
-    const lastTxn  = txns.length ? txns[txns.length-1].date : null;
-    return `<div onclick="openSupLedger('${s.id}')"
-      style="background:var(--bg2);border:.5px solid var(--border);border-radius:var(--rl);padding:1rem 1.1rem;margin-bottom:.625rem;cursor:pointer;transition:border-color .15s"
-      onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-        <div style="min-width:0">
-          <div style="font-size:.95rem;font-weight:700;margin-bottom:3px">${s.name}</div>
-          <div style="font-size:.75rem;font-family:var(--mono);color:var(--muted)">
-            ${s.phone?'📞 '+s.phone:''}${s.phone&&s.city?' · ':''}${s.city?'📍 '+s.city:''}
-          </div>
-          ' + (lastTxn ? '<div style="font-size:.68rem;font-family:var(--mono);color:var(--hint);margin-top:3px">Last: '+lastTxn+'</div>' : '') + '
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:${balCol}">${supFmt(bal)}</div>
-          <div style="font-size:.65rem;font-family:var(--mono);color:${balCol};margin-top:2px">${balLabel}</div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  var html = '';
+  filtered.forEach(function(s) {
+    var txns     = SUP.txns[s.id] || [];
+    var bal      = computeBalance(s, txns);
+    var balCol   = Math.abs(bal) < 1 ? 'var(--muted)' : bal > 0 ? 'var(--red)' : 'var(--green)';
+    var balLabel = Math.abs(bal) < 1 ? 'Settled' : bal > 0 ? 'We owe' : 'They owe';
+    var lastTxn  = txns.length ? txns[txns.length-1].date : null;
+    var contact  = '';
+    if (s.phone) contact += '\uD83D\uDCDE ' + s.phone;
+    if (s.phone && s.city) contact += ' &middot; ';
+    if (s.city)  contact += '\uD83D\uDCCD ' + s.city;
+    var lastLine = lastTxn ? '<div style="font-size:.68rem;font-family:var(--mono);color:var(--hint);margin-top:3px">Last: ' + lastTxn + '</div>' : '';
+    html +=
+      '<div onclick="openSupLedger(\'' + s.id + '\')"' +
+        ' style="background:var(--bg2);border:.5px solid var(--border);border-radius:var(--rl);padding:1rem 1.1rem;margin-bottom:.625rem;cursor:pointer">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">' +
+          '<div style="min-width:0">' +
+            '<div style="font-size:.95rem;font-weight:700;margin-bottom:3px">' + s.name + '</div>' +
+            '<div style="font-size:.75rem;font-family:var(--mono);color:var(--muted)">' + contact + '</div>' +
+            lastLine +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0">' +
+            '<div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:' + balCol + '">' + supFmt(bal) + '</div>' +
+            '<div style="font-size:.65rem;font-family:var(--mono);color:' + balCol + ';margin-top:2px">' + balLabel + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  });
+  el.innerHTML = html;
 }
 
 // ════════════════════════════════════════════════════
