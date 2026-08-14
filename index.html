@@ -1917,13 +1917,15 @@ async function loadRole() {
     S.role = snap.exists ? (snap.data().role || 'staff') : 'staff';
   } catch(e) { S.role = 'staff'; }
   applyRole();
-  // Preload supplier data in background after everything is ready
+  // Preload supplier data in background — wrapped safely so any error doesn't affect main app
   setTimeout(function() {
-    loadSuppliers().then(function() {
-      renderSupOverview();
-      renderSupplierList();
-    }).catch(function(e) { console.warn('Supplier preload:', e); });
-  }, 500);
+    try {
+      loadSuppliers().then(function() {
+        if (typeof renderSupOverview === 'function') renderSupOverview();
+        if (typeof renderSupplierList === 'function') renderSupplierList();
+      }).catch(function(e) { console.warn('Supplier preload error:', e.message); });
+    } catch(e) { console.warn('Supplier preload failed:', e.message); }
+  }, 1000);
 }
 
 function applyRole() {
