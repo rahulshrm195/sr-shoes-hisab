@@ -1917,10 +1917,16 @@ async function loadRole() {
     S.role = snap.exists ? (snap.data().role || 'staff') : 'staff';
   } catch(e) { S.role = 'staff'; }
   applyRole();
+  // Preload supplier data in background after everything is ready
+  setTimeout(function() {
+    loadSuppliers().then(function() {
+      renderSupOverview();
+      renderSupplierList();
+    }).catch(function(e) { console.warn('Supplier preload:', e); });
+  }, 500);
 }
 
 function applyRole() {
-  const isOwner = S.role === 'owner';
   // Reports tab — owner only
   const reportsTab = document.getElementById('tab-reports');
   if (reportsTab) reportsTab.style.display = isOwner ? '' : 'none';
@@ -1947,8 +1953,6 @@ function applyRole() {
   }
   // Show day-closed screen for staff if today is already closed
   if (!isOwner) checkDayClosed();
-  // Preload supplier data in background so it's ready when tab is clicked
-  loadSuppliers().then(function() { renderSupOverview(); });
 }
 
 // ════════════════════════════════════════════════════
