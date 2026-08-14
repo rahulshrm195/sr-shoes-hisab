@@ -194,6 +194,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 /* ── Modal ── */
 .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100; align-items:flex-end; justify-content:center; }
 .modal-backdrop.open { display:flex; }
+.modal-backdrop.sup-modal-high { z-index:300; }
 .modal { background:var(--bg2); border:1px solid var(--border2); box-shadow:0 8px 32px rgba(0,0,0,0.15); border-radius:var(--rl) var(--rl) 0 0; padding:1.5rem; width:100%; max-width:480px; max-height:80dvh; overflow-y:auto; animation:slideUp .2s ease; }
 @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
 .modal-title { font-size:1rem; font-weight:700; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center; }
@@ -490,7 +491,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.8.1</div>
+  <div class="auth-ver">v1.8.3</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -513,7 +514,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.8.1</div>
+    <div class="topbar-ver">v1.8.3</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -933,7 +934,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
     </div>
 
     <!-- SUPPLIER MODAL (create/edit) -->
-    <div class="modal-backdrop" id="sup-modal">
+    <div class="modal-backdrop sup-modal-high" id="sup-modal">
       <div class="modal" style="max-width:420px">
         <div class="modal-title">
           <span id="sup-modal-title">New Supplier</span>
@@ -966,7 +967,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
     </div>
 
     <!-- TRANSACTION MODAL -->
-    <div class="modal-backdrop" id="txn-modal">
+    <div class="modal-backdrop sup-modal-high" id="txn-modal">
       <div class="modal" style="max-width:420px">
         <div class="modal-title">
           <span id="txn-modal-title">Add Transaction</span>
@@ -1177,7 +1178,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.8.1</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.8.3</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1211,6 +1212,57 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <div class="card" style="margin-top:.875rem">
         <div class="card-title">What's new</div>
         <div class="changelog">
+          <div class="cl-entry">
+            <div class="cl-ver">v1.8.3 <span class="cl-date">14 Aug 2026</span></div>
+            <div class="cl-item">&#10003; Updated changelog with all Aug 2026 entries</div>
+            <div class="cl-item">&#10003; Older versions collapsed behind Show older toggle</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.8.2 <span class="cl-date">14 Aug 2026</span></div>
+            <div class="cl-item">&#10003; Fixed supplier modals appearing behind ledger screen</div>
+            <div class="cl-item">&#10003; Edit and Transaction modals now correctly overlay ledger</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.8.1 <span class="cl-date">14 Aug 2026</span></div>
+            <div class="cl-item">&#10003; Split transaction modal into Purchase and Payment sections</div>
+            <div class="cl-item">&#10003; Purchase side: Purchase on credit, Credit note</div>
+            <div class="cl-item">&#10003; Payment side: Full payment, Part payment, Advance, Return, Debit note</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.8.0 <span class="cl-date">14 Aug 2026</span></div>
+            <div class="cl-item">&#10003; Day closed screen shows immediately after saving — no refresh needed</div>
+            <div class="cl-item">&#10003; Owner-only supplier delete with batch transaction removal</div>
+            <div class="cl-item">&#10003; Fixed supplier ledger info and balance rendering in Safari</div>
+            <div class="cl-item">&#10003; Fixed renderCashIn crash in Safari on boot</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.7.9 <span class="cl-date">14 Aug 2026</span></div>
+            <div class="cl-item">&#10003; Fixed supplier list raw template text in Safari</div>
+            <div class="cl-item">&#10003; Fixed supplier Firestore query — no composite index needed</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.7.8 <span class="cl-date">14 Aug 2026</span></div>
+            <div class="cl-item">&#10003; Supplier ledger — full bank statement style per supplier</div>
+            <div class="cl-item">&#10003; 7 transaction types: Purchase, Payment, Part Payment, Return, Advance, Debit Note, Credit Note</div>
+            <div class="cl-item">&#10003; Supplier reports — outstanding summary + supplier-wise table</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.7.4 <span class="cl-date">14 Aug 2026</span></div>
+            <div class="cl-item">&#10003; New Suppliers tab — directory with search and contact info</div>
+            <div class="cl-item">&#10003; Opening balance per supplier with direction (we owe / they owe)</div>
+            <div class="cl-item">&#10003; Firestore: suppliers + supplier_txns collections</div>
+          </div>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.7.3 <span class="cl-date">13 Aug 2026</span></div>
+            <div class="cl-item">&#10003; Staff see locked screen after closing — blind count enforced</div>
+            <div class="cl-item">&#10003; Post-closing entry form on locked screen for last-minute sales</div>
+            <div class="cl-item">&#10003; Auto date reset on visibility change — no refresh needed next morning</div>
+            <div class="cl-item">&#10003; Multi-device FCM push notifications — all registered devices receive alerts</div>
+            <div class="cl-item">&#10003; Per-device token registration with auto-cleanup of stale tokens</div>
+          </div>
+
+          <!-- Older versions collapsed -->
+          <div id="cl-older" style="display:none">
           <div class="cl-entry">
             <div class="cl-ver">v1.7.2 <span class="cl-date">09 Apr 2026</span></div>
             <div class="cl-item">&#10003; Post-closing: Cash or UPI/Card type selection</div>
@@ -1555,6 +1607,8 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <div class="cl-item">&#10003; Monthly reports, customer ledger, staff</div>
             <div class="cl-item">&#10003; PWA installable, push notifications</div>
           </div>
+          </div><!-- end #cl-older -->
+          <button id="cl-toggle" onclick="toggleOlderCl()" style="background:none;border:.5px solid var(--border2);border-radius:20px;padding:5px 16px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer;margin-top:4px">Show older versions ▾</button>
         </div>
       </div>
     </div>
@@ -2079,6 +2133,15 @@ window.saveDcEntry = async function() {
     err.textContent = 'Error: ' + e.message;
   }
 };
+
+function toggleOlderCl() {
+  var el  = document.getElementById('cl-older');
+  var btn = document.getElementById('cl-toggle');
+  if (!el || !btn) return;
+  var show = el.style.display === 'none';
+  el.style.display  = show ? '' : 'none';
+  btn.textContent   = show ? 'Hide older versions ▴' : 'Show older versions ▾';
+}
 
 // ════════════════════════════════════════════════════
 // STATS BAR
