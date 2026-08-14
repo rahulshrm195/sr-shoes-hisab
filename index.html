@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Syne:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
 
 <!-- EmailJS for auto email on closing -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -1023,7 +1023,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
 
       <!-- Custom date range -->
-      <div id="report-custom-range" class="card" style="display:none;margin-bottom:.875rem">
+      <div id="report-custom-range" style="display:none" class="card" style="margin-bottom:.875rem">
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <div>
             <label class="field-label">From</label>
@@ -1471,8 +1471,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
             <div class="cl-ver">v1.1.8 <span class="cl-date">22 Mar 2026</span></div>
             <div class="cl-item">&#10003; Role based access: staff and owner tabs</div>
             <div class="cl-item">&#10003; User management in Settings</div>
-          </div>
-          <div class="cl-entry">
+            <div class="cl-entry">
             <div class="cl-ver">v1.1.7 <span class="cl-date">22 Mar 2026</span></div>
             <div class="cl-item">&#10003; Fixed Android PWA notifications via Service Worker</div>
             <div class="cl-item">&#10003; Fixed EOD reminder notification</div>
@@ -3513,7 +3512,7 @@ function renderSupplierList() {
           <div style="font-size:.75rem;font-family:var(--mono);color:var(--muted)">
             ${s.phone?'📞 '+s.phone:''}${s.phone&&s.city?' · ':''}${s.city?'📍 '+s.city:''}
           </div>
-          ${lastTxn?`<div style="font-size:.68rem;font-family:var(--mono);color:var(--hint);margin-top:3px">Last: ${lastTxn}</div>`:''}
+          ' + (lastTxn ? '<div style="font-size:.68rem;font-family:var(--mono);color:var(--hint);margin-top:3px">Last: '+lastTxn+'</div>' : '') + '
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:${balCol}">${supFmt(bal)}</div>
@@ -3557,9 +3556,9 @@ function renderLedgerInfo(sup) {
   el.innerHTML = `
     <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);padding:.875rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:10px">
       <div>
-        ${sup.phone?`<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted)">📞 <a href="tel:${sup.phone}" style="color:var(--accent);text-decoration:none">${sup.phone}</a></div>`:''}
-        ${sup.city?`<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted);margin-top:2px">📍 ${sup.city}</div>`:''}
-        ${sup.notes?`<div style="font-size:.78rem;font-family:var(--mono);color:var(--hint);margin-top:4px">${sup.notes}</div>`:''}
+        ' + (sup.phone ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted)">📞 <a href="tel:'+sup.phone+'" style="color:var(--accent);text-decoration:none">'+sup.phone+'</a></div>' : '') + '
+        ' + (sup.city  ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted);margin-top:2px">📍 '+sup.city+'</div>' : '') + '
+        ' + (sup.notes ? '<div style="font-size:.78rem;font-family:var(--mono);color:var(--hint);margin-top:4px">'+sup.notes+'</div>' : '') + '
       </div>
       <button onclick="openSupModal('${sup.id}')"
         style="background:none;border:.5px solid var(--border2);border-radius:var(--r);padding:6px 12px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer">
@@ -3627,19 +3626,26 @@ function renderLedgerTxns(sup) {
       t.notes || '',
     ].filter(Boolean).join(' · ');
 
-    rows.push(`
-      <div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;align-items:start;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem"
-        ${S.role==='owner'?`title="Click to delete" onclick="delTxn('${t.id}','${sup.id}')" style="cursor:pointer;display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;align-items:start;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem"`:''}
-      >
-        <div style="color:var(--hint)">${t.date||''}</div>
-        <div>
-          <div style="color:var(--text)">${cfg.icon} ${cfg.label}</div>
-          ${details?`<div style="color:var(--muted);font-size:.7rem;margin-top:2px">${details}</div>`:''}
-          <div style="color:var(--hint);font-size:.68rem;margin-top:1px">By: ${t.by||'—'}</div>
-        </div>
-        <div style="color:${amtCol};white-space:nowrap">${signed>0?'+':'-'}${supFmt(t.amount)}</div>
-        <div style="color:${balCol};font-weight:600;white-space:nowrap">${supFmt(runBal)}</div>
-      </div>`);
+    // Build row safely — no nested backticks (Safari compatibility)
+    const ownerAttrs = S.role==='owner'
+      ? ' onclick="delTxn(\''+t.id+'\',\''+sup.id+'\') " style="cursor:pointer"'
+      : '';
+    const detailsHtml = details
+      ? '<div style="color:var(--muted);font-size:.7rem;margin-top:2px">'+details+'</div>'
+      : '';
+    rows.push(
+      '<div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;align-items:start;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem"'
+      + ownerAttrs + '>'
+      + '<div style="color:var(--hint)">' + (t.date||'') + '</div>'
+      + '<div>'
+      + '<div style="color:var(--text)">' + cfg.icon + ' ' + cfg.label + '</div>'
+      + detailsHtml
+      + '<div style="color:var(--hint);font-size:.68rem;margin-top:1px">By: ' + (t.by||'—') + '</div>'
+      + '</div>'
+      + '<div style="color:' + amtCol + ';white-space:nowrap">' + (signed>0?'+':'-') + supFmt(t.amount) + '</div>'
+      + '<div style="color:' + balCol + ';font-weight:600;white-space:nowrap">' + supFmt(runBal) + '</div>'
+      + '</div>'
+    );
   });
 
   // Header row
@@ -3873,7 +3879,7 @@ async function renderSupReport() {
                 onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
                 <td style="padding:8px 4px">
                   <div style="font-weight:600;color:var(--text)">${s.name}</div>
-                  ${s.city?`<div style="font-size:.68rem;color:var(--hint)">${s.city}</div>`:''}
+                  ' + (s.city ? '<div style="font-size:.68rem;color:var(--hint)">'+s.city+'</div>' : '') + '
                 </td>
                 <td style="padding:8px 4px;text-align:right;color:var(--text)">${supFmt(purchased)}</td>
                 <td style="padding:8px 4px;text-align:right;color:var(--green)">${supFmt(paid)}</td>
