@@ -491,7 +491,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.9.0</div>
+  <div class="auth-ver">v1.9.1</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -514,7 +514,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.9.0</div>
+    <div class="topbar-ver">v1.9.1</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -1178,7 +1178,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.9.0</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.9.1</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1213,6 +1213,11 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <button id="cl-toggle-top" onclick="toggleOlderCl()" style="background:none;border:.5px solid var(--border2);border-radius:20px;padding:5px 16px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer;margin-bottom:10px">Show older versions ▾</button>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.9.1 <span class="cl-date">17 Nov 2026</span></div>
+            <div class="cl-item">&#10003; App now opens even when the internet is down, and shows a red "No internet connection" bar</div>
+            <div class="cl-item">&#10003; Faster loading — libraries are kept on the device</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.9.0 <span class="cl-date">17 Nov 2026</span></div>
             <div class="cl-item">&#10003; New server-side security rules — owner and staff permissions are now enforced by the database, not just the screen</div>
@@ -1994,6 +1999,7 @@ async function boot() {
   // Re-render lists now that role is known — delete buttons show correctly
   renderExpenses();
   if (typeof renderCashIn === 'function') renderCashIn();
+  window._bootDone = true;
 }
 
 // Yesterday's closing banner on the Opening tab.
@@ -4133,6 +4139,29 @@ async function renderSupReport() {
 document.getElementById('tab-suppliers')?.addEventListener('click', () => {
   initSuppliers();
 });
+
+// ════════════════════════════════════════════════════
+// OFFLINE BAR
+// The app itself opens without internet (saved by sw.js), but the
+// register lives on the server — tell the user plainly when it is
+// unreachable, and reload once the connection is back if the app
+// never finished loading.
+// ════════════════════════════════════════════════════
+(function() {
+  const bar = document.createElement('div');
+  bar.id = 'offline-bar';
+  bar.style.cssText = 'display:none;position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#b91c1c;color:#fff;font-family:var(--mono);font-size:.8rem;line-height:1.4;padding:10px 14px;text-align:center';
+  bar.textContent = 'No internet connection — the register cannot load or save until it is back.';
+  document.body.appendChild(bar);
+  const update = () => { bar.style.display = navigator.onLine ? 'none' : 'block'; };
+  window.addEventListener('offline', update);
+  window.addEventListener('online', () => {
+    update();
+    if (S.user && !window._bootDone) location.reload();
+    else showToast('Back online');
+  });
+  update();
+})();
 
 if ('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com') {
   navigator.serviceWorker.register('/sw.js')
