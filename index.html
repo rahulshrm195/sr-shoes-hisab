@@ -2352,8 +2352,7 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
 // ════════════════════════════════════════════════════
 // EXPENSES
 // ════════════════════════════════════════════════════
-function renderExpenses() {
-  // Switch between Cash Out and Cash In tabs
+// Switch between Cash Out and Cash In tabs
 window.switchEntryTab = function(tab) {
   const formOut = document.getElementById('entry-form-out');
   const formIn  = document.getElementById('entry-form-in');
@@ -2430,7 +2429,8 @@ document.getElementById('btn-save-one-cashin')?.addEventListener('click', async 
 document.getElementById('cashin-amt')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('cashin-desc').focus();});
 document.getElementById('cashin-desc')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-save-one-cashin').click();});
 
-// Init category dropdown
+function renderExpenses() {
+  // Init category dropdown
   const sel = document.getElementById('exp-cat');
   if (sel && sel.options.length === 0) {
     EXP_CATS.forEach(c => { const o = document.createElement('option'); o.textContent = c; sel.appendChild(o); });
