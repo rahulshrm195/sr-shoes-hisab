@@ -1,9 +1,9 @@
-// SR Shoes Hisab — Service Worker v19
+// SR Shoes Hisab — Service Worker v20
 // Keeps a copy of the app and its libraries on the device so the app
 // still opens when the internet is down. Register data itself (Firestore)
 // is never cached here — it always comes live from the server.
 
-const VERSION = 'v19';
+const VERSION = 'v20';
 const SHELL   = 'hisab-shell-' + VERSION;   // the app's own files
 const CDN     = 'hisab-cdn-v1';             // third-party libraries and fonts
 
