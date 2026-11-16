@@ -491,7 +491,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.10.0</div>
+  <div class="auth-ver">v1.11.0</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -514,7 +514,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.10.0</div>
+    <div class="topbar-ver">v1.11.0</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -554,6 +554,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
     <button class="nav-tab" data-tab="closing">Closing</button>
     <button class="nav-tab" data-tab="summary">Summary</button>
     <button class="nav-tab" data-tab="reports" id="tab-reports" style="display:none">Reports</button>
+    <button class="nav-tab" data-tab="money" id="tab-money" style="display:none">Cash &amp; Bank</button>
     <button class="nav-tab" data-tab="suppliers" id="tab-suppliers">Suppliers</button>
   </nav>
   <div class="main">
@@ -664,6 +665,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
                 style="width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:.9rem;color:var(--text);outline:none;cursor:pointer;">
                 <option>Debtor received</option>
                 <option>Cash added</option>
+                <option>Cash from home</option>
                 <option>Other income</option>
               </select>
             </div>
@@ -1012,12 +1014,16 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         </div>
         <div id="txn-mode-wrap">
           <label>Payment Mode</label>
-          <select id="txn-mode">
+          <select id="txn-mode" onchange="syncTxnFrom()">
             <option value="cash">Cash</option>
             <option value="upi">UPI / PhonePe</option>
             <option value="neft">Bank Transfer (NEFT/RTGS)</option>
             <option value="cheque">Cheque</option>
           </select>
+        </div>
+        <div id="txn-from-wrap">
+          <label>Paid From</label>
+          <select id="txn-from"></select>
         </div>
         <div id="txn-ref-wrap">
           <label>Reference / UTR No (optional)</label>
@@ -1033,6 +1039,11 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
     </div>
 
     <!-- MONTHLY -->
+    <!-- CASH & BANK (owner only) -->
+    <div class="section" id="section-money">
+      <div id="money-content"></div>
+    </div>
+
     <div class="section" id="section-reports">
 
       <!-- Period selector + Export -->
@@ -1189,7 +1200,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.10.0</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.11.0</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1230,6 +1241,14 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <button id="cl-toggle-top" onclick="toggleOlderCl()" style="background:none;border:.5px solid var(--border2);border-radius:20px;padding:5px 16px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer;margin-bottom:10px">Show older versions ▾</button>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.11.0 <span class="cl-date">17 Nov 2026</span></div>
+            <div class="cl-item">&#10003; New Cash &amp; Bank tab (owner): home cash and bank balances with a full statement</div>
+            <div class="cl-item">&#10003; Taken home, PhonePe and card sales are added automatically from each closing</div>
+            <div class="cl-item">&#10003; New Cash In category &ldquo;Cash from home&rdquo; &mdash; reduces home cash automatically</div>
+            <div class="cl-item">&#10003; Supplier payments now record where the money came from: shop drawer, bank or home cash</div>
+            <div class="cl-item">&#10003; A cash payment from the drawer is added to the day&rsquo;s cash out automatically &mdash; do not enter it twice</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.10.0 <span class="cl-date">17 Nov 2026</span></div>
             <div class="cl-item">&#10003; Entries can only be added by staff, never edited or removed &mdash; enforced by the database</div>
@@ -1712,7 +1731,7 @@ const NOTES    = [500, 200, 100, 50, 20, 10];
 const COINS    = [20, 10, 5, 2, 1];
 const DEFAULT_CATS = ['Rent','Electricity','Staff wages','Packaging','Transport','Repairs','Miscellaneous','Other'];
 let EXP_CATS = [...DEFAULT_CATS];
-const CASHIN_CATS = ['Debtor received','Cash added','Other income'];
+const CASHIN_CATS = ['Debtor received','Cash added','Cash from home','Other income'];
 const STORE_ID = 'sr-shoes-main'; // shared store — all staff see same data
 
 // ════════════════════════════════════════════════════
@@ -1859,9 +1878,10 @@ async function loadRange(from, to) {
   const recs = snap.docs.map(d => d.data());
   // Expected opening now lives in its own owner-only records — attach it for the reports
   try {
-    const cs = await db.collection('carry').where('storeId','==',STORE_ID).where('date','>=',from).where('date','<=',to).get();
+    // Single-field filter only, so no extra database index is required
+    const cs = await db.collection('carry').where('storeId','==',STORE_ID).get();
     const byDate = {};
-    cs.docs.forEach(d => { byDate[d.data().date] = d.data().amount; });
+    cs.docs.forEach(d => { const c = d.data(); if (c.date >= from && c.date <= to) byDate[c.date] = c.amount; });
     recs.forEach(r => { if (r.expectedOpening == null && byDate[r.date] != null) r.expectedOpening = byDate[r.date]; });
   } catch(e) { console.warn('Carry range load:', e.message); }
   return recs;
@@ -1915,7 +1935,7 @@ function logAudit(action, details) {
 // Add ONE entry to today's expenses / cashIn / postClosing list.
 // Reads the latest list from the server first, so two devices adding at the
 // same moment can never overwrite each other. Returns the fresh list.
-async function appendEntry(field, entry) {
+async function appendEntry(field, entry, extra) {
   const ref = regRef(S.today);
   const out = await db.runTransaction(async tx => {
     const snap = await tx.get(ref);
@@ -1930,6 +1950,7 @@ async function appendEntry(field, entry) {
       tx.set(carryRef(nextDate(S.today)), carryData(cur, upd.pcCashTotal));
     }
     tx.set(ref, upd, { merge: true });
+    if (extra) extra(tx, full);
     return { list, full, pcCashTotal: upd.pcCashTotal };
   });
   if (field === 'postClosing') S.rec = { ...S.rec, pcCashTotal: out.pcCashTotal };
@@ -2191,6 +2212,8 @@ function applyRole() {
   // Reports tab — owner only
   const reportsTab = document.getElementById('tab-reports');
   if (reportsTab) reportsTab.style.display = isOwner ? '' : 'none';
+  const moneyTab = document.getElementById('tab-money');
+  if (moneyTab) moneyTab.style.display = isOwner ? '' : 'none';
   // Categories and users cards — owner only
   const catCard   = document.getElementById('exp-categories-card');
   const usersCard = document.getElementById('users-card');
@@ -2210,7 +2233,7 @@ function applyRole() {
   // If staff on a hidden section, redirect to opening
   if (!isOwner) {
     const active = document.querySelector('.nav-tab.active');
-    if (active && ['reports'].includes(active.dataset.tab)) {
+    if (active && ['reports','money'].includes(active.dataset.tab)) {
       document.querySelector('.nav-tab[data-tab="opening"]').click();
     }
   }
@@ -2384,6 +2407,7 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     document.getElementById('section-' + tab.dataset.tab).classList.add('active');
     if (tab.dataset.tab === 'summary')   updateSummaryTab();
     if (tab.dataset.tab === 'reports')   loadMonthly();
+    if (tab.dataset.tab === 'money')     loadMoney();
     if (tab.dataset.tab === 'suppliers') initSuppliers();
     // deactivate gear when switching tabs
     document.getElementById('topbar-gear').classList.remove('active');
@@ -3113,7 +3137,8 @@ const AUDIT_LABELS = {
   supplier_added:'Supplier added', supplier_edited:'Supplier edited', supplier_deleted:'Supplier deleted',
   supplier_txn_added:'Supplier transaction added', supplier_txn_deleted:'Supplier transaction deleted',
   role_changed:'User role changed', user_preapproved:'User pre-approved',
-  settings_saved:'Settings saved', categories_changed:'Expense categories changed'
+  settings_saved:'Settings saved', categories_changed:'Expense categories changed',
+  money_opening_set:'Cash & Bank opening balances set', money_move_added:'Cash & Bank movement added'
 };
 window.loadAuditLog = async function() {
   const el = document.getElementById('audit-list');
@@ -4314,8 +4339,21 @@ window.onTxnTypeChange = function() {
   const type = document.getElementById('txn-type').value;
   const cfg  = TXN_TYPES[type] || {};
   document.getElementById('txn-mode-wrap').style.display    = cfg.showMode ? '' : 'none';
+  document.getElementById('txn-from-wrap').style.display    = cfg.showMode ? '' : 'none';
+  syncTxnFrom();
   document.getElementById('txn-ref-wrap').style.display     = cfg.showMode ? '' : 'none';
   document.getElementById('txn-billno-wrap').style.display  = cfg.showBill ? '' : 'none';
+};
+
+// Where the money for a payment comes from. Cash can only leave the shop
+// drawer or (owner only) home cash; every other mode leaves the bank account.
+window.syncTxnFrom = function() {
+  const sel  = document.getElementById('txn-from');
+  const mode = document.getElementById('txn-mode').value;
+  const opts = mode === 'cash'
+    ? [['shop','Shop cash drawer']].concat(S.role === 'owner' ? [['home','Home cash']] : [])
+    : [['bank','Bank account']];
+  sel.innerHTML = opts.map(function(o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('');
 };
 
 window.saveTxn = async function() {
@@ -4344,11 +4382,35 @@ window.saveTxn = async function() {
   if (cfg.showBill && billNo) data.billNo = billNo;
   if (cfg.showMode) { data.mode = mode; if (ref) data.ref = ref; }
 
+  // Payments say which pocket the money left
+  let paidFrom = null;
+  if (cfg.showMode) {
+    paidFrom = mode === 'cash' ? (document.getElementById('txn-from').value === 'home' && S.role === 'owner' ? 'home' : 'shop') : 'bank';
+    data.paidFrom = paidFrom;
+    if (paidFrom === 'shop') {
+      if (date !== S.today) { err.textContent = 'A payment from the shop drawer can only be dated today.'; return; }
+      if (S.rec?.closingTime) { err.textContent = 'The day is closed. Record drawer payments before closing, or pay from the bank.'; return; }
+    }
+  }
+
   try {
     const btn = document.getElementById('txn-modal-save');
     btn.disabled = true; btn.textContent = 'Saving…';
-    const docRef = await db.collection('supplier_txns').add(data);
-    logAudit('supplier_txn_added', { supplierId: supId, txnId: docRef.id, type, amount: amt, date, billNo: data.billNo || '', mode: data.mode || '', ref: data.ref || '' });
+    let docRef;
+    if (paidFrom === 'shop') {
+      // Cash leaving the drawer: the supplier entry and the day's cash-out are saved together
+      docRef = db.collection('supplier_txns').doc();
+      data.cashOutLinked = true;
+      const supName = (SUP.suppliers.find(s=>s.id===supId) || {}).name || 'supplier';
+      const out = await appendEntry('expenses',
+        { amt, desc: 'Paid to ' + supName, cat: 'Supplier payment', supTxnId: docRef.id },
+        function(tx) { tx.set(docRef, data); });
+      S.expenses = out.list;
+      renderExpenses(); calcClosing();
+    } else {
+      docRef = await db.collection('supplier_txns').add(data);
+    }
+    logAudit('supplier_txn_added', { supplierId: supId, txnId: docRef.id, type, amount: amt, date, billNo: data.billNo || '', mode: data.mode || '', ref: data.ref || '', paidFrom: paidFrom || '' });
     if (!SUP.txns[supId]) SUP.txns[supId] = [];
     SUP.txns[supId].push({ id: docRef.id, ...data });
     SUP.txns[supId].sort((a,b)=>a.date.localeCompare(b.date));
@@ -4363,6 +4425,229 @@ window.saveTxn = async function() {
     document.getElementById('txn-modal-save').textContent = 'Save Transaction';
     err.textContent = 'Error: ' + friendlyErr(e);
   }
+};
+
+// ════════════════════════════════════════════════════
+// CASH & BANK (owner only)
+// Home cash and the bank account, each with an opening balance and a
+// running statement. Most lines come straight from records that already
+// exist (closings, cash-in entries, supplier payments), so they cannot
+// drift apart; the owner adds the rest (deposits, withdrawals, drawings).
+// ════════════════════════════════════════════════════
+const MONEY = { cfg: null, rows: [], bal: { home: 0, bank: 0 }, drawer: null, filter: 'all', showSetup: false, showAdd: false };
+const ACC_LABEL = { home: 'Home cash', bank: 'Bank account' };
+const MOVE_TYPES = {
+  deposit:  { label: 'Deposit home cash into bank', from: 'home', to: 'bank' },
+  withdraw: { label: 'Withdraw from bank to home cash', from: 'bank', to: 'home' },
+  out_home: { label: 'Money out of home cash', from: 'home', to: null },
+  out_bank: { label: 'Money out of bank', from: 'bank', to: null },
+  in_home:  { label: 'Money into home cash', from: null, to: 'home' },
+  in_bank:  { label: 'Money into bank', from: null, to: 'bank' },
+};
+const MOVE_REASONS = ['Owner drawings', 'Expense', 'Bank charges', 'Salary / advance', 'Capital added', 'Other income', 'Correction', 'Other'];
+
+async function loadMoney() {
+  const el = document.getElementById('money-content');
+  if (!el || S.role !== 'owner') return;
+  el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:.85rem">Loading...</div>';
+  try {
+    const cfgSnap = await db.collection('money_config').doc(STORE_ID).get();
+    MONEY.cfg = cfgSnap.exists ? cfgSnap.data() : null;
+    if (!MONEY.cfg) { MONEY.rows = []; renderMoney(); return; }
+    const start = MONEY.cfg.startDate;
+    const res = await Promise.all([
+      loadRange(start, '9999-12-31'),
+      db.collection('supplier_txns').where('storeId','==',STORE_ID).get(),
+      db.collection('money_moves').where('storeId','==',STORE_ID).get(),
+      db.collection('carry').where('storeId','==',STORE_ID).get(),
+      SUP.suppliers.length ? Promise.resolve() : loadSuppliers(),
+    ]);
+    const rows = [];
+    const add = function(date, acc, amt, label, extra) { if (amt) rows.push(Object.assign({ date: date, acc: acc, amt: amt, label: label, order: 5 }, extra || {})); };
+    add(start, 'home', MONEY.cfg.openHome || 0, 'Opening balance', { order: 0 });
+    add(start, 'bank', MONEY.cfg.openBank || 0, 'Opening balance', { order: 0 });
+
+    // From the daily registers
+    res[0].forEach(function(r) {
+      (r.cashIn || []).forEach(function(e) {
+        if (e.cat === 'Cash from home') add(r.date, 'home', -(parseFloat(e.amt) || 0), 'Taken to shop' + (e.desc ? ' — ' + e.desc : ''), { src: 'Cash in entry' });
+      });
+      if (!r.closingTime) return;
+      add(r.date, 'home', r.takenHome || 0, 'Taken home at closing', { src: 'Closing', order: 8 });
+      add(r.date, 'bank', (r.phonepe || 0) + (r.cardSales || 0), 'PhonePe + card sales', { src: 'Closing', order: 8 });
+      (r.postClosing || []).forEach(function(e) {
+        if (e.type === 'online') add(r.date, 'bank', parseFloat(e.amt) || 0, 'Post-closing UPI/card sale', { src: 'Post-closing', order: 9 });
+      });
+    });
+
+    // Supplier payments made from home cash or the bank
+    res[1].docs.forEach(function(d) {
+      const t = d.data();
+      if (!t.date || t.date < start) return;
+      if (['payment','part_payment','advance'].indexOf(t.type) < 0) return;
+      const from = t.paidFrom || (t.mode && t.mode !== 'cash' ? 'bank' : null);
+      if (from !== 'home' && from !== 'bank') return;
+      const sup = SUP.suppliers.find(function(x) { return x.id === t.supplierId; });
+      add(t.date, from, -(t.amount || 0), 'Paid to ' + (sup ? sup.name : 'supplier') + (t.ref ? ' — Ref ' + t.ref : ''), { src: 'Supplier payment · ' + (t.by || '') });
+    });
+
+    // Movements the owner entered by hand
+    res[2].docs.forEach(function(d) {
+      const m = d.data(); const cfg = MOVE_TYPES[m.kind];
+      if (!cfg || !m.date || m.date < start) return;
+      const what = (m.reason ? m.reason : cfg.label) + (m.note ? ' — ' + m.note : '');
+      if (cfg.from) add(m.date, cfg.from, -(m.amount || 0), cfg.to ? 'To ' + ACC_LABEL[cfg.to].toLowerCase() + (m.note ? ' — ' + m.note : '') : what, { src: 'Entered by owner', id: d.id });
+      if (cfg.to)   add(m.date, cfg.to,     (m.amount || 0), cfg.from ? 'From ' + ACC_LABEL[cfg.from].toLowerCase() + (m.note ? ' — ' + m.note : '') : what, { src: 'Entered by owner', id: d.id });
+    });
+
+    rows.sort(function(a, b) { return a.date.localeCompare(b.date) || a.order - b.order; });
+    const bal = { home: 0, bank: 0 };
+    rows.forEach(function(r) { bal[r.acc] += r.amt; r.bal = bal[r.acc]; });
+    MONEY.rows = rows; MONEY.bal = bal;
+
+    // What should be in the shop drawer: the latest carried-forward figure
+    let latest = null;
+    res[3].docs.forEach(function(d) { const c = d.data(); if (!latest || c.date > latest.date) latest = c; });
+    MONEY.drawer = latest;
+    renderMoney();
+  } catch(e) {
+    el.innerHTML = '<div class="card" style="color:var(--red);font-family:var(--mono);font-size:.82rem">Could not load: ' + esc(friendlyErr(e)) + '</div>';
+  }
+}
+
+function renderMoney() {
+  const el = document.getElementById('money-content');
+  const inp = 'width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:.88rem;color:var(--text);margin-bottom:10px';
+  const lbl = 'display:block;font-size:.68rem;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;margin-bottom:4px';
+  const cfg = MONEY.cfg;
+
+  const setupForm =
+    '<div class="card" style="margin-bottom:.875rem">' +
+      '<div class="card-title">Opening balances</div>' +
+      '<div style="font-size:.78rem;font-family:var(--mono);color:var(--muted);margin-bottom:.875rem">Enter what was actually at home and in the bank at the START of the chosen day. Tracking begins from that day.</div>' +
+      '<label style="' + lbl + '">START DATE</label><input type="date" id="money-start" style="' + inp + '" value="' + esc(cfg ? cfg.startDate : dateKey()) + '">' +
+      '<label style="' + lbl + '">HOME CASH (₹)</label><input type="number" id="money-open-home" inputmode="numeric" style="' + inp + '" value="' + (cfg ? (cfg.openHome || 0) : '') + '" placeholder="0">' +
+      '<label style="' + lbl + '">BANK BALANCE (₹)</label><input type="number" id="money-open-bank" inputmode="numeric" style="' + inp + '" value="' + (cfg ? (cfg.openBank || 0) : '') + '" placeholder="0">' +
+      '<div id="money-setup-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);min-height:1em;margin-bottom:6px"></div>' +
+      '<button class="btn-save" style="margin-top:0" onclick="saveMoneySetup()">Save opening balances</button>' +
+      (cfg ? '<button class="btn-outline" style="width:100%;margin-top:8px;padding:10px" onclick="MONEY.showSetup=false;renderMoney()">Cancel</button>' : '') +
+    '</div>';
+
+  if (!cfg) { el.innerHTML = setupForm; return; }
+
+  const card = function(title, value, sub, border) {
+    return '<div style="flex:1;min-width:150px;background:var(--bg2);border:.5px solid ' + border + ';border-radius:var(--r);padding:12px 14px">' +
+      '<div style="font-size:.6rem;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">' + title + '</div>' +
+      '<div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:' + (value < 0 ? 'var(--red)' : 'var(--text)') + '">' + (value < 0 ? '-' : '') + supFmt(value) + '</div>' +
+      '<div style="font-size:.65rem;font-family:var(--mono);color:var(--hint);margin-top:3px">' + sub + '</div></div>';
+  };
+  const d = MONEY.drawer;
+  const cards = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.875rem">' +
+    card('Home cash', MONEY.bal.home, 'Since ' + esc(cfg.startDate), 'rgba(37,99,235,.3)') +
+    card('Bank account', MONEY.bal.bank, 'Since ' + esc(cfg.startDate), 'rgba(22,163,74,.3)') +
+    card('Shop drawer', d ? d.amount : 0, d ? 'Expected at opening on ' + esc(d.date) : 'No closing recorded yet', 'var(--border2)') +
+  '</div>';
+
+  const typeOpts = Object.keys(MOVE_TYPES).map(function(k) { return '<option value="' + k + '">' + MOVE_TYPES[k].label + '</option>'; }).join('');
+  const reasonOpts = MOVE_REASONS.map(function(r) { return '<option>' + r + '</option>'; }).join('');
+  const addForm = !MONEY.showAdd ? '' :
+    '<div class="card" style="margin-bottom:.875rem">' +
+      '<div class="card-title">Add movement</div>' +
+      '<label style="' + lbl + '">WHAT HAPPENED</label><select id="money-kind" style="' + inp + '" onchange="moneyKindChanged()">' + typeOpts + '</select>' +
+      '<div id="money-reason-wrap" style="display:none"><label style="' + lbl + '">REASON</label><select id="money-reason" style="' + inp + '">' + reasonOpts + '</select></div>' +
+      '<label style="' + lbl + '">AMOUNT (₹)</label><input type="number" id="money-amt" inputmode="numeric" style="' + inp + '" placeholder="0">' +
+      '<label style="' + lbl + '">DATE</label><input type="date" id="money-date" style="' + inp + '" value="' + dateKey() + '" min="' + esc(cfg.startDate) + '">' +
+      '<label style="' + lbl + '">NOTE</label><input type="text" id="money-note" style="' + inp + '" placeholder="e.g. deposited at SBI by self">' +
+      '<div id="money-add-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);min-height:1em;margin-bottom:6px"></div>' +
+      '<button class="btn-save" style="margin-top:0" id="money-add-save" onclick="saveMoneyMove()">Save movement</button>' +
+      '<div style="font-size:.68rem;font-family:var(--mono);color:var(--hint);margin-top:8px">Saved movements cannot be edited or deleted. To fix a mistake, add the opposite movement with reason "Correction".</div>' +
+    '</div>';
+
+  const chip = function(k, t) {
+    return '<button class="report-subtab' + (MONEY.filter === k ? ' active' : '') + '" onclick="MONEY.filter=\'' + k + '\';renderMoney()">' + t + '</button>';
+  };
+  const shown = MONEY.rows.filter(function(r) { return MONEY.filter === 'all' || r.acc === MONEY.filter; }).slice().reverse();
+  const list = shown.length ? shown.map(function(r) {
+    const col = r.amt >= 0 ? 'var(--green)' : 'var(--red)';
+    return '<div style="display:grid;grid-template-columns:86px 1fr auto auto;gap:10px;align-items:start;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem">' +
+      '<div style="color:var(--hint)">' + esc(r.date) + '</div>' +
+      '<div style="min-width:0"><div style="color:var(--text)">' + esc(r.label) + '</div>' +
+        '<div style="color:var(--hint);font-size:.68rem;margin-top:2px">' + esc(ACC_LABEL[r.acc]) + (r.src ? ' · ' + esc(r.src) : '') + '</div></div>' +
+      '<div style="color:' + col + ';white-space:nowrap;font-weight:600">' + (r.amt >= 0 ? '+' : '-') + supFmt(r.amt) + '</div>' +
+      '<div style="color:var(--muted);white-space:nowrap;min-width:80px;text-align:right">' + (r.bal < 0 ? '-' : '') + supFmt(r.bal) + '</div>' +
+    '</div>';
+  }).join('') : '<div style="font-family:var(--mono);font-size:.82rem;color:var(--hint);padding:8px 0">Nothing yet</div>';
+
+  el.innerHTML = cards +
+    (MONEY.showSetup ? setupForm : '') +
+    '<div style="display:flex;gap:8px;margin-bottom:.875rem;flex-wrap:wrap">' +
+      '<button class="btn-outline" style="padding:9px 14px;font-size:.8rem" onclick="MONEY.showAdd=!MONEY.showAdd;renderMoney();if(MONEY.showAdd)moneyKindChanged()">' + (MONEY.showAdd ? 'Close' : '+ Add movement') + '</button>' +
+      '<button class="btn-outline" style="padding:9px 14px;font-size:.8rem" onclick="MONEY.showSetup=!MONEY.showSetup;renderMoney()">Opening balances</button>' +
+      '<button class="btn-outline" style="padding:9px 14px;font-size:.8rem" onclick="loadMoney()">Refresh</button>' +
+    '</div>' +
+    addForm +
+    '<div class="card">' +
+      '<div class="card-title">Statement</div>' +
+      '<div class="report-subtabs" style="display:flex;gap:4px;margin-bottom:.5rem">' + chip('all', 'All') + chip('home', 'Home cash') + chip('bank', 'Bank') + '</div>' +
+      '<div style="display:grid;grid-template-columns:86px 1fr auto auto;gap:10px;padding:6px 0;border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:.62rem;color:var(--hint);letter-spacing:.06em;text-transform:uppercase">' +
+        '<div>Date</div><div>Details</div><div>Amount</div><div style="min-width:80px;text-align:right">Balance</div></div>' +
+      list +
+    '</div>';
+}
+
+window.moneyKindChanged = function() {
+  const k = document.getElementById('money-kind'); if (!k) return;
+  const cfg = MOVE_TYPES[k.value];
+  document.getElementById('money-reason-wrap').style.display = (cfg.from && cfg.to) ? 'none' : '';
+};
+
+window.saveMoneySetup = async function() {
+  const err = document.getElementById('money-setup-error');
+  const startDate = document.getElementById('money-start').value;
+  const openHome  = parseFloat(document.getElementById('money-open-home').value) || 0;
+  const openBank  = parseFloat(document.getElementById('money-open-bank').value) || 0;
+  err.textContent = '';
+  if (!startDate) { err.textContent = 'Choose the start date.'; return; }
+  if (startDate > dateKey()) { err.textContent = 'The start date cannot be in the future.'; return; }
+  try {
+    const before = MONEY.cfg;
+    await db.collection('money_config').doc(STORE_ID).set({
+      storeId: STORE_ID, startDate, openHome, openBank,
+      byUid: S.user.uid, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    logAudit('money_opening_set', { startDate, openHome, openBank,
+      before: before ? { startDate: before.startDate, openHome: before.openHome, openBank: before.openBank } : null });
+    MONEY.showSetup = false;
+    showToast('Opening balances saved');
+    loadMoney();
+  } catch(e) { err.textContent = 'Error: ' + friendlyErr(e); }
+};
+
+window.saveMoneyMove = async function() {
+  const err  = document.getElementById('money-add-error');
+  const btn  = document.getElementById('money-add-save');
+  const kind = document.getElementById('money-kind').value;
+  const cfg  = MOVE_TYPES[kind];
+  const amount = parseFloat(document.getElementById('money-amt').value) || 0;
+  const date = document.getElementById('money-date').value;
+  const note = document.getElementById('money-note').value.trim();
+  const reason = (cfg.from && cfg.to) ? '' : document.getElementById('money-reason').value;
+  err.textContent = '';
+  if (!cfg) return;
+  if (!amount || amount <= 0) { err.textContent = 'Enter a valid amount.'; return; }
+  if (!date || date < MONEY.cfg.startDate) { err.textContent = 'Date must be on or after ' + MONEY.cfg.startDate + '.'; return; }
+  if (date > dateKey()) { err.textContent = 'The date cannot be in the future.'; return; }
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const data = { storeId: STORE_ID, kind, amount, date, note, reason,
+      byUid: S.user.uid, by: S.user.email || '', createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const ref = await db.collection('money_moves').add(data);
+    logAudit('money_move_added', { moveId: ref.id, kind, amount, date, reason, note });
+    MONEY.showAdd = false;
+    showToast(cfg.label + ' — ' + supFmt(amount));
+    loadMoney();
+  } catch(e) { err.textContent = 'Error: ' + friendlyErr(e); btn.disabled = false; btn.textContent = 'Save movement'; }
 };
 
 // ════════════════════════════════════════════════════
