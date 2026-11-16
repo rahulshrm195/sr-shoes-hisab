@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// SR Shoes Hisab — Firestore security rules (app v1.11.0+)
+// SR Shoes Hisab — Firestore security rules (app v1.12.0+)
 // Paste into Firebase console → Firestore Database → Rules → Publish.
 //
 // The app only hides things on screen. These rules are what actually stop
@@ -14,6 +14,7 @@ rules_version = '2';
 //   • cannot see today's expected opening until their own count is saved
 //   • cannot set or change a supplier's opening balance
 //   • can only add supplier transactions dated today, never edit or delete
+//   • cannot record a payment to a supplier unless the owner approved that request
 //   • cannot touch the activity log (nobody can change or delete it)
 
 service cloud.firestore {
@@ -247,6 +248,19 @@ service cloud.firestore {
     match /supplier_txns/{id} {
       allow read: if isMember();
 
+      // This payment settles exactly one approved request, in the same save:
+      // the request was 'approved' before, is 'paid' after, and points back here.
+      function paidViaRequest(txnId) {
+        let reqPath = /databases/$(database)/documents/pay_requests/$(request.resource.data.requestId);
+        return request.resource.data.requestId is string
+          && get(reqPath).data.status == 'approved'
+          && getAfter(reqPath).data.status == 'paid'
+          && getAfter(reqPath).data.paidTxnId == txnId
+          && request.resource.data.amount == get(reqPath).data.approvedAmount
+          && request.resource.data.supplierId == get(reqPath).data.supplierId
+          && request.resource.data.type == get(reqPath).data.kind;
+      }
+
       // Staff: today's date only, stamped with who and when, a real supplier
       allow create: if isMember() && request.resource.data.storeId == storeId()
         && (isOwner()
@@ -263,10 +277,67 @@ service cloud.firestore {
             && exists(/databases/$(database)/documents/suppliers/$(request.resource.data.supplierId))
             // Staff can pay from the shop drawer or the bank — never from home cash
             && request.resource.data.get('paidFrom', 'shop') in ['shop', 'bank']
+            // Money going out needs an approved payment request behind it
+            && (!(request.resource.data.type in ['payment', 'part_payment', 'advance'])
+                || paidViaRequest(id))
           ));
 
       allow update: if isOwner() && request.resource.data.storeId == storeId();
       allow delete: if isOwner();
+    }
+
+    // ── PAYMENT REQUESTS ─────────────────────────────────
+    // pending → approved / rejected (owner) → paid (with the ledger entry) ; never deleted
+    match /pay_requests/{id} {
+      function txnPath(t) { return /databases/$(database)/documents/supplier_txns/$(t); }
+
+      allow read: if isMember();
+
+      allow create: if isMember()
+        && request.resource.data.storeId == storeId()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.requestedByUid == request.auth.uid
+        && request.resource.data.requestedAt == request.time
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.kind in ['payment', 'part_payment', 'advance']
+        && exists(/databases/$(database)/documents/suppliers/$(request.resource.data.supplierId))
+        && !request.resource.data.keys().hasAny(['approvedAmount', 'decidedByUid', 'decidedBy', 'decidedAt',
+             'paidTxnId', 'paidAt', 'paidByUid', 'paidBy', 'paidRef', 'paidMode', 'paidFrom', 'cancelledAt']);
+
+      allow update: if isMember() && (
+        // Owner approves (possibly a different amount), rejects, or withdraws an approval
+        (isOwner()
+          && resource.data.status in ['pending', 'approved']
+          && request.resource.data.status in ['approved', 'rejected']
+          && changed().hasOnly(['status', 'approvedAmount', 'decisionNote', 'decidedByUid', 'decidedBy', 'decidedAt'])
+          && request.resource.data.decidedByUid == request.auth.uid
+          && request.resource.data.decidedAt == request.time
+          && (request.resource.data.status == 'rejected'
+              || (request.resource.data.approvedAmount is number && request.resource.data.approvedAmount > 0)))
+        // The person who asked may cancel while it is still waiting
+        || (resource.data.status == 'pending'
+          && resource.data.requestedByUid == request.auth.uid
+          && request.resource.data.status == 'cancelled'
+          && changed().hasOnly(['status', 'cancelledAt'])
+          && request.resource.data.cancelledAt == request.time)
+        // Marking an approved request paid — only together with its ledger entry,
+        // for exactly the approved amount, and only once
+        || (resource.data.status == 'approved'
+          && request.resource.data.status == 'paid'
+          && changed().hasOnly(['status', 'paidTxnId', 'paidRef', 'paidMode', 'paidFrom', 'paidAt', 'paidByUid', 'paidBy'])
+          && request.resource.data.paidByUid == request.auth.uid
+          && request.resource.data.paidAt == request.time
+          && (request.resource.data.paidMode == 'cash' || request.resource.data.paidRef.size() > 0)
+          && !exists(txnPath(request.resource.data.paidTxnId))
+          && existsAfter(txnPath(request.resource.data.paidTxnId))
+          && getAfter(txnPath(request.resource.data.paidTxnId)).data.requestId == id
+          && getAfter(txnPath(request.resource.data.paidTxnId)).data.amount == resource.data.approvedAmount
+          && getAfter(txnPath(request.resource.data.paidTxnId)).data.supplierId == resource.data.supplierId
+          && getAfter(txnPath(request.resource.data.paidTxnId)).data.byUid == request.auth.uid)
+      );
+
+      allow delete: if false;
     }
 
     // ── CASH & BANK (owner only) ─────────────────────────

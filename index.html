@@ -491,7 +491,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.11.0</div>
+  <div class="auth-ver">v1.12.0</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -514,7 +514,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.11.0</div>
+    <div class="topbar-ver">v1.12.0</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -895,6 +895,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       <!-- Sub-tabs -->
       <div style="display:flex;gap:0;margin-bottom:1rem;border-bottom:1.5px solid var(--border2);">
         <button class="report-subtab active" id="sup-tab-list"   onclick="supSwitchTab('list')">Directory</button>
+        <button class="report-subtab"        id="sup-tab-pay"    onclick="supSwitchTab('pay')">Payments</button>
         <button class="report-subtab"        id="sup-tab-day"    onclick="supSwitchTab('day')">Day Book</button>
         <button class="report-subtab"        id="sup-tab-report" onclick="supSwitchTab('report')">Reports</button>
       </div>
@@ -910,6 +911,10 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
 
       <!-- REPORTS VIEW -->
+      <div id="sup-view-pay" style="display:none">
+        <div id="sup-pay-content"></div>
+      </div>
+
       <div id="sup-view-day" style="display:none">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:.875rem;flex-wrap:wrap">
           <button onclick="supDayShift(-1)" style="background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--r);padding:8px 12px;font-family:var(--mono);font-size:.8rem;color:var(--text);cursor:pointer">&#8592;</button>
@@ -1200,7 +1205,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.11.0</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.12.0</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1241,6 +1246,15 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <button id="cl-toggle-top" onclick="toggleOlderCl()" style="background:none;border:.5px solid var(--border2);border-radius:20px;padding:5px 16px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer;margin-bottom:10px">Show older versions ▾</button>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.12.0 <span class="cl-date">17 Nov 2026</span></div>
+            <div class="cl-item">&#10003; Payment approvals: Suppliers &rarr; Payments</div>
+            <div class="cl-item">&#10003; Staff request a payment; the owner approves, changes the amount or rejects</div>
+            <div class="cl-item">&#10003; Staff mark an approved payment as paid &mdash; only then is the supplier ledger updated</div>
+            <div class="cl-item">&#10003; Staff can no longer record a supplier payment without an approved request</div>
+            <div class="cl-item">&#10003; Warning when a request is more than what is owed to the supplier</div>
+            <div class="cl-item">&#10003; UPI, bank transfer and cheque payments need a reference number</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.11.0 <span class="cl-date">17 Nov 2026</span></div>
             <div class="cl-item">&#10003; New Cash &amp; Bank tab (owner): home cash and bank balances with a full statement</div>
@@ -3138,7 +3152,9 @@ const AUDIT_LABELS = {
   supplier_txn_added:'Supplier transaction added', supplier_txn_deleted:'Supplier transaction deleted',
   role_changed:'User role changed', user_preapproved:'User pre-approved',
   settings_saved:'Settings saved', categories_changed:'Expense categories changed',
-  money_opening_set:'Cash & Bank opening balances set', money_move_added:'Cash & Bank movement added'
+  money_opening_set:'Cash & Bank opening balances set', money_move_added:'Cash & Bank movement added',
+  pay_requested:'Payment requested', pay_approved:'Payment approved', pay_rejected:'Payment rejected',
+  pay_cancelled:'Payment request cancelled', pay_paid:'Approved payment paid'
 };
 window.loadAuditLog = async function() {
   const el = document.getElementById('audit-list');
@@ -3820,6 +3836,9 @@ function supSwitchTab(tab) {
   document.getElementById('sup-view-report').style.display = tab==='report' ? '' : 'none';
   document.getElementById('sup-tab-day').classList.toggle('active', tab==='day');
   document.getElementById('sup-view-day').style.display = tab==='day' ? '' : 'none';
+  document.getElementById('sup-tab-pay').classList.toggle('active', tab==='pay');
+  document.getElementById('sup-view-pay').style.display = tab==='pay' ? '' : 'none';
+  if (tab==='pay') loadPayments();
   if (tab==='report') renderSupReport();
   if (tab==='day') {
     const inp = document.getElementById('sup-day-date');
@@ -4329,6 +4348,10 @@ window.setTxnDir = function(dir) {
   // Populate sub-type dropdown
   var sel = document.getElementById('txn-type');
   var opts = isPurchase ? TXN_PURCHASE_OPTS : TXN_PAYMENT_OPTS;
+  // Staff cannot record money going out directly — that goes through Payments (request → approve → pay)
+  if (!isPurchase && S.role !== 'owner') {
+    opts = opts.filter(function(o) { return ['payment','part_payment','advance'].indexOf(o.value) < 0; });
+  }
   sel.innerHTML = opts.map(function(o) {
     return '<option value="' + o.value + '">' + o.label + '</option>';
   }).join('');
@@ -4381,6 +4404,8 @@ window.saveTxn = async function() {
   };
   if (cfg.showBill && billNo) data.billNo = billNo;
   if (cfg.showMode) { data.mode = mode; if (ref) data.ref = ref; }
+  if (cfg.showMode && S.role !== 'owner') { err.textContent = 'Payments need approval. Use Suppliers → Payments → Request payment.'; return; }
+  if (cfg.showMode) data.direct = true;   // paid by the owner directly, without a request
 
   // Payments say which pocket the money left
   let paidFrom = null;
@@ -4425,6 +4450,311 @@ window.saveTxn = async function() {
     document.getElementById('txn-modal-save').textContent = 'Save Transaction';
     err.textContent = 'Error: ' + friendlyErr(e);
   }
+};
+
+// ════════════════════════════════════════════════════
+// PAYMENT APPROVALS
+// Staff REQUEST a payment → owner APPROVES (or changes / rejects) →
+// staff PAY it and mark it paid. Only that last step writes to the
+// supplier's ledger, and the security rules refuse a staff payment that
+// has no approved request behind it, or a second payment on one request.
+// ════════════════════════════════════════════════════
+const PAY = { reqs: [], showForm: false, payingId: null, decidingId: null };
+const PAY_KINDS = { payment: 'Payment', part_payment: 'Part payment', advance: 'Advance' };
+const PAY_STATUS = {
+  pending:   { label: 'Waiting for approval', col: 'var(--amber)' },
+  approved:  { label: 'Approved — to be paid', col: 'var(--accent)' },
+  paid:      { label: 'Paid', col: 'var(--green)' },
+  rejected:  { label: 'Rejected', col: 'var(--red)' },
+  cancelled: { label: 'Cancelled', col: 'var(--hint)' },
+};
+
+async function loadPayments() {
+  const el = document.getElementById('sup-pay-content');
+  if (!el) return;
+  if (!PAY.reqs.length) el.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:.85rem">Loading...</div>';
+  try {
+    if (!SUP.suppliers.length) await loadSuppliers();
+    // Fresh ledgers and requests from the server, so balances include other devices' entries
+    const res = await Promise.all([
+      db.collection('supplier_txns').where('storeId','==',STORE_ID).get(),
+      db.collection('pay_requests').where('storeId','==',STORE_ID).get(),
+    ]);
+    const byS = {};
+    SUP.suppliers.forEach(function(x) { byS[x.id] = []; });
+    res[0].docs.forEach(function(d) { const t = Object.assign({ id: d.id }, d.data()); (byS[t.supplierId] = byS[t.supplierId] || []).push(t); });
+    Object.keys(byS).forEach(function(k) { byS[k].sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); }); });
+    SUP.txns = byS;
+    PAY.reqs = res[1].docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    renderSupOverview();
+    renderPayments();
+  } catch(e) {
+    el.innerHTML = '<div class="card" style="color:var(--red);font-family:var(--mono);font-size:.82rem">Could not load: ' + esc(friendlyErr(e)) + '</div>';
+  }
+}
+
+function payMs(t) { return (t && t.toMillis) ? t.toMillis() : 0; }
+
+// Money already promised to a supplier by other open requests
+function payOpenTotal(supplierId, exceptId) {
+  return PAY.reqs.filter(function(r) { return r.supplierId === supplierId && r.id !== exceptId && (r.status === 'pending' || r.status === 'approved'); })
+    .reduce(function(sum, r) { return sum + (r.status === 'approved' ? (r.approvedAmount || 0) : (r.amount || 0)); }, 0);
+}
+
+function renderPayments() {
+  const el = document.getElementById('sup-pay-content');
+  const isOwner = S.role === 'owner';
+  const inp = 'width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);padding:9px 12px;font-family:var(--mono);font-size:.88rem;color:var(--text);margin-bottom:10px';
+  const lbl = 'display:block;font-size:.68rem;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;margin-bottom:4px';
+  const sbtn = 'padding:7px 12px;font-size:.76rem;border-radius:var(--r);font-family:var(--mono);cursor:pointer;border:.5px solid var(--border2);background:var(--bg2);color:var(--text)';
+
+  const pending  = PAY.reqs.filter(function(r) { return r.status === 'pending'; });
+  const approved = PAY.reqs.filter(function(r) { return r.status === 'approved'; });
+  const done     = PAY.reqs.filter(function(r) { return ['paid','rejected','cancelled'].indexOf(r.status) >= 0; })
+    .sort(function(a, b) { return Math.max(payMs(b.paidAt), payMs(b.decidedAt), payMs(b.cancelledAt), payMs(b.requestedAt)) - Math.max(payMs(a.paidAt), payMs(a.decidedAt), payMs(a.cancelledAt), payMs(a.requestedAt)); })
+    .slice(0, 40);
+  // Order the staff decided: pay-on date first, then priority, then oldest request
+  const seq = function(a, b) {
+    return (a.payOn || '9999').localeCompare(b.payOn || '9999') || (a.priority || 999) - (b.priority || 999) || payMs(a.requestedAt) - payMs(b.requestedAt);
+  };
+  pending.sort(seq); approved.sort(seq);
+
+  const tabBtn = document.getElementById('sup-tab-pay');
+  const badge = isOwner ? pending.length : approved.length;
+  if (tabBtn) tabBtn.textContent = 'Payments' + (badge ? ' (' + badge + ')' : '');
+
+  const supOpts = SUP.suppliers.map(function(x) {
+    return '<option value="' + escId(x.id) + '">' + esc(x.name) + '</option>';
+  }).join('');
+  const form = !PAY.showForm ? '' :
+    '<div class="card" style="margin-bottom:.875rem">' +
+      '<div class="card-title">Request a payment</div>' +
+      '<label style="' + lbl + '">SUPPLIER</label><select id="pay-sup" style="' + inp + '" onchange="payFormHint()"><option value="">Choose supplier…</option>' + supOpts + '</select>' +
+      '<div id="pay-form-hint" style="font-size:.74rem;font-family:var(--mono);color:var(--muted);margin:-4px 0 10px"></div>' +
+      '<label style="' + lbl + '">AMOUNT (₹)</label><input type="number" id="pay-amt" inputmode="numeric" style="' + inp + '" placeholder="0" oninput="payFormHint()">' +
+      '<label style="' + lbl + '">TYPE</label><select id="pay-kind" style="' + inp + '"><option value="payment">Payment</option><option value="part_payment">Part payment</option><option value="advance">Advance</option></select>' +
+      '<label style="' + lbl + '">HOW IT WILL BE PAID</label><select id="pay-mode" style="' + inp + '"><option value="cash">Cash</option><option value="upi">UPI / PhonePe</option><option value="neft">Bank transfer</option><option value="cheque">Cheque</option></select>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div><label style="' + lbl + '">PAY ON (optional)</label><input type="date" id="pay-on" style="' + inp + '" min="' + dateKey() + '"></div>' +
+        '<div><label style="' + lbl + '">ORDER (1 = first)</label><input type="number" id="pay-prio" inputmode="numeric" style="' + inp + '" placeholder="e.g. 1"></div>' +
+      '</div>' +
+      '<label style="' + lbl + '">NOTE FOR OWNER</label><input type="text" id="pay-note" style="' + inp + '" placeholder="e.g. vendor called, against bill 123">' +
+      '<div id="pay-form-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);min-height:1em;margin-bottom:6px"></div>' +
+      '<button class="btn-save" style="margin-top:0" id="pay-form-save" onclick="savePayRequest()">Send for approval</button>' +
+    '</div>';
+
+  const cardFor = function(r) {
+    const sup = SUP.suppliers.find(function(x) { return x.id === r.supplierId; });
+    const bal = sup ? computeBalance(sup, SUP.txns[sup.id] || []) : 0;
+    const others = payOpenTotal(r.supplierId, r.id);
+    const amt = r.status === 'pending' ? r.amount : (r.approvedAmount || r.amount);
+    const stt = PAY_STATUS[r.status] || { label: r.status, col: 'var(--muted)' };
+    const open = r.status === 'pending' || r.status === 'approved';
+    const over = open ? (amt + others) - Math.max(bal, 0) : 0;
+    const when = function(t) { return payMs(t) ? new Date(payMs(t)).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : ''; };
+    let lines = '<div style="color:var(--hint);font-size:.7rem;margin-top:3px">Requested by ' + esc(r.requestedBy || '—') + ' · ' + esc(when(r.requestedAt)) + '</div>';
+    lines += '<div style="color:var(--muted);font-size:.74rem;margin-top:3px">' + esc(PAY_KINDS[r.kind] || r.kind) + ' · ' + esc(MODE_LABELS[r.mode] || r.mode || '') +
+      (r.payOn ? ' · pay on ' + esc(r.payOn) : '') + (r.priority ? ' · order ' + esc(r.priority) : '') + '</div>';
+    if (r.note) lines += '<div style="color:var(--text);font-size:.76rem;margin-top:3px">“' + esc(r.note) + '”</div>';
+    if (open) lines += '<div style="color:var(--muted);font-size:.74rem;margin-top:5px">We owe now: <b>' + (bal < 0 ? '-' : '') + supFmt(bal) + '</b>' +
+      (others ? ' · other open requests: ' + supFmt(others) : '') + '</div>';
+    if (over > 0.5) lines += '<div style="color:var(--red);font-size:.74rem;margin-top:3px;font-weight:600">⚠ ' + supFmt(over) + ' more than we owe — this would be an advance</div>';
+    if (r.status !== 'pending' && r.decidedBy) lines += '<div style="color:var(--hint);font-size:.7rem;margin-top:3px">' + (r.status === 'rejected' ? 'Rejected' : 'Approved') + ' by ' + esc(r.decidedBy) + ' · ' + esc(when(r.decidedAt)) +
+      (r.approvedAmount && r.approvedAmount !== r.amount ? ' · amount changed from ' + supFmt(r.amount) : '') + (r.decisionNote ? ' · “' + esc(r.decisionNote) + '”' : '') + '</div>';
+    if (r.status === 'paid') lines += '<div style="color:var(--hint);font-size:.7rem;margin-top:3px">Paid by ' + esc(r.paidBy || '—') + ' · ' + esc(when(r.paidAt)) + ' · ' + esc(MODE_LABELS[r.paidMode] || r.paidMode || '') + (r.paidRef ? ' · Ref ' + esc(r.paidRef) : '') + '</div>';
+
+    let actions = '';
+    const id = escId(r.id);
+    if (r.status === 'pending' && isOwner) {
+      actions = PAY.decidingId === r.id
+        ? '<div style="margin-top:10px"><label style="' + lbl + '">APPROVE AMOUNT (₹)</label><input type="number" id="pay-dec-amt" style="' + inp + '" value="' + r.amount + '">' +
+          '<label style="' + lbl + '">NOTE (needed to reject)</label><input type="text" id="pay-dec-note" style="' + inp + '" placeholder="optional">' +
+          '<div id="pay-dec-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);min-height:1em;margin-bottom:6px"></div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap"><button style="' + sbtn + ';background:var(--green);color:#fff;border-color:var(--green)" onclick="decidePay(\'' + id + '\',true)">Approve</button>' +
+          '<button style="' + sbtn + ';color:var(--red);border-color:var(--red)" onclick="decidePay(\'' + id + '\',false)">Reject</button>' +
+          '<button style="' + sbtn + '" onclick="PAY.decidingId=null;renderPayments()">Close</button></div></div>'
+        : '<div style="margin-top:10px"><button style="' + sbtn + ';background:var(--accent);color:#fff;border-color:var(--accent)" onclick="PAY.decidingId=\'' + id + '\';PAY.payingId=null;renderPayments()">Review</button></div>';
+    } else if (r.status === 'pending' && r.requestedByUid === S.user.uid) {
+      actions = '<div style="margin-top:10px"><button style="' + sbtn + '" onclick="cancelPay(\'' + id + '\')">Cancel request</button></div>';
+    } else if (r.status === 'approved') {
+      const modeOpts = '<option value="cash:shop">Cash — from shop drawer</option>' + (isOwner ? '<option value="cash:home">Cash — from home cash</option>' : '') +
+        '<option value="upi:bank">UPI / PhonePe — from bank</option><option value="neft:bank">Bank transfer — from bank</option><option value="cheque:bank">Cheque — from bank</option>';
+      actions = PAY.payingId === r.id
+        ? '<div style="margin-top:10px"><label style="' + lbl + '">HOW WAS IT PAID</label><select id="pay-do-mode" style="' + inp + '">' + modeOpts + '</select>' +
+          '<label style="' + lbl + '">REFERENCE / UTR / CHEQUE NO (needed unless cash)</label><input type="text" id="pay-do-ref" style="' + inp + '" placeholder="e.g. UTR1234567890">' +
+          '<div id="pay-do-error" style="font-size:.75rem;color:var(--red);font-family:var(--mono);min-height:1em;margin-bottom:6px"></div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="pay-do-save" style="' + sbtn + ';background:var(--green);color:#fff;border-color:var(--green)" onclick="markPaid(\'' + id + '\')">Confirm paid ' + supFmt(amt) + '</button>' +
+          '<button style="' + sbtn + '" onclick="PAY.payingId=null;renderPayments()">Close</button></div></div>'
+        : '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button style="' + sbtn + ';background:var(--green);color:#fff;border-color:var(--green)" onclick="PAY.payingId=\'' + id + '\';PAY.decidingId=null;renderPayments();payModeDefault(\'' + id + '\')">Mark as paid</button>' +
+          (isOwner ? '<button style="' + sbtn + ';color:var(--red);border-color:var(--red)" onclick="revokePay(\'' + id + '\')">Withdraw approval</button>' : '') + '</div>';
+    }
+    return '<div style="background:var(--bg2);border:.5px solid var(--border);border-left:3px solid ' + stt.col + ';border-radius:var(--r);padding:.875rem 1rem;margin-bottom:.625rem;font-family:var(--mono)">' +
+      '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">' +
+        '<div style="min-width:0"><div style="font-family:var(--sans);font-size:.95rem;font-weight:700;color:var(--text)">' + esc(sup ? sup.name : (r.supplierName || 'Deleted supplier')) + '</div>' +
+          '<div style="font-size:.66rem;color:' + stt.col + ';letter-spacing:.06em;text-transform:uppercase;margin-top:2px">' + stt.label + '</div></div>' +
+        '<div style="font-size:1.05rem;font-weight:700;color:var(--text);white-space:nowrap">' + supFmt(amt) + '</div>' +
+      '</div>' + lines + actions + '</div>';
+  };
+  const block = function(title, list, empty) {
+    return '<div style="font-size:.65rem;font-family:var(--mono);color:var(--accent);letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin:1rem 0 .5rem">' + title + (list.length ? ' (' + list.length + ')' : '') + '</div>' +
+      (list.length ? list.map(cardFor).join('') : '<div style="font-family:var(--mono);font-size:.8rem;color:var(--hint);padding:2px 0 6px">' + empty + '</div>');
+  };
+
+  el.innerHTML =
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.5rem">' +
+      '<button class="btn-save" style="margin-top:0;width:auto;padding:9px 16px;font-size:.84rem" onclick="PAY.showForm=!PAY.showForm;renderPayments()">' + (PAY.showForm ? 'Close' : '+ Request payment') + '</button>' +
+      '<button class="btn-outline" style="padding:9px 14px;font-size:.8rem" onclick="loadPayments()">Refresh</button>' +
+    '</div>' + form +
+    (isOwner
+      ? block('Waiting for your approval', pending, 'Nothing waiting') + block('Approved — not yet paid', approved, 'Nothing outstanding')
+      : block('Approved — pay these', approved, 'Nothing to pay right now') + block('Waiting for owner approval', pending, 'Nothing waiting')) +
+    block('Recent', done, 'No history yet');
+}
+
+window.payFormHint = function() {
+  const hint = document.getElementById('pay-form-hint'); if (!hint) return;
+  const supId = document.getElementById('pay-sup').value;
+  const amt = parseFloat(document.getElementById('pay-amt').value) || 0;
+  const sup = SUP.suppliers.find(function(x) { return x.id === supId; });
+  if (!sup) { hint.textContent = ''; return; }
+  const bal = computeBalance(sup, SUP.txns[sup.id] || []);
+  const others = payOpenTotal(supId, null);
+  const over = (amt + others) - Math.max(bal, 0);
+  hint.innerHTML = 'We owe now: <b>' + (bal < 0 ? '-' : '') + supFmt(bal) + '</b>' + (others ? ' · already requested: ' + supFmt(others) : '') +
+    (amt && over > 0.5 ? '<br><span style="color:var(--red);font-weight:600">⚠ ' + supFmt(over) + ' more than we owe — the owner will see this warning</span>' : '');
+};
+
+window.savePayRequest = async function() {
+  const err = document.getElementById('pay-form-error');
+  const btn = document.getElementById('pay-form-save');
+  const supplierId = document.getElementById('pay-sup').value;
+  const amount = parseFloat(document.getElementById('pay-amt').value) || 0;
+  const sup = SUP.suppliers.find(function(x) { return x.id === supplierId; });
+  err.textContent = '';
+  if (!sup) { err.textContent = 'Choose the supplier.'; return; }
+  if (!amount || amount <= 0) { err.textContent = 'Enter a valid amount.'; return; }
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const data = {
+      storeId: STORE_ID, supplierId, supplierName: sup.name, amount,
+      kind: document.getElementById('pay-kind').value,
+      mode: document.getElementById('pay-mode').value,
+      payOn: document.getElementById('pay-on').value || null,
+      priority: parseInt(document.getElementById('pay-prio').value) || null,
+      note: document.getElementById('pay-note').value.trim(),
+      status: 'pending',
+      requestedByUid: S.user.uid, requestedBy: S.user.email || '',
+      requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+    const ref = await db.collection('pay_requests').add(data);
+    logAudit('pay_requested', { requestId: ref.id, supplier: sup.name, amount, kind: data.kind, mode: data.mode, payOn: data.payOn || '', note: data.note });
+    PAY.showForm = false;
+    showToast('Sent for approval — ' + supFmt(amount) + ' to ' + sup.name);
+    loadPayments();
+  } catch(e) { err.textContent = 'Error: ' + friendlyErr(e); btn.disabled = false; btn.textContent = 'Send for approval'; }
+};
+
+window.decidePay = async function(id, approve) {
+  if (S.role !== 'owner') return;
+  const r = PAY.reqs.find(function(x) { return x.id === id; }); if (!r) return;
+  const err = document.getElementById('pay-dec-error');
+  const amount = parseFloat(document.getElementById('pay-dec-amt').value) || 0;
+  const note = document.getElementById('pay-dec-note').value.trim();
+  err.textContent = '';
+  if (approve && amount <= 0) { err.textContent = 'Enter the amount to approve.'; return; }
+  if (!approve && !note) { err.textContent = 'Write a short reason for rejecting.'; return; }
+  try {
+    const upd = { status: approve ? 'approved' : 'rejected', decisionNote: note,
+      decidedByUid: S.user.uid, decidedBy: S.user.email || '', decidedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (approve) upd.approvedAmount = amount;
+    await db.collection('pay_requests').doc(id).update(upd);
+    logAudit(approve ? 'pay_approved' : 'pay_rejected', { requestId: id, supplier: r.supplierName, requested: r.amount, approved: approve ? amount : 0, note });
+    PAY.decidingId = null;
+    showToast(approve ? 'Approved — ' + supFmt(amount) : 'Rejected');
+    loadPayments();
+  } catch(e) { err.textContent = 'Error: ' + friendlyErr(e); }
+};
+
+window.revokePay = async function(id) {
+  if (S.role !== 'owner') return;
+  const r = PAY.reqs.find(function(x) { return x.id === id; }); if (!r) return;
+  const note = prompt('Withdraw this approval? Write a short reason:');
+  if (!note) return;
+  try {
+    await db.collection('pay_requests').doc(id).update({ status: 'rejected', decisionNote: note,
+      decidedByUid: S.user.uid, decidedBy: S.user.email || '', decidedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    logAudit('pay_rejected', { requestId: id, supplier: r.supplierName, requested: r.amount, approved: 0, note: 'Approval withdrawn: ' + note });
+    showToast('Approval withdrawn');
+    loadPayments();
+  } catch(e) { showToast('Error: ' + friendlyErr(e)); }
+};
+
+window.cancelPay = async function(id) {
+  const r = PAY.reqs.find(function(x) { return x.id === id; }); if (!r) return;
+  if (!confirm('Cancel this payment request?')) return;
+  try {
+    await db.collection('pay_requests').doc(id).update({ status: 'cancelled', cancelledAt: firebase.firestore.FieldValue.serverTimestamp() });
+    logAudit('pay_cancelled', { requestId: id, supplier: r.supplierName, amount: r.amount });
+    showToast('Request cancelled');
+    loadPayments();
+  } catch(e) { showToast('Error: ' + friendlyErr(e)); }
+};
+
+// Pre-select the mode the requester said they would use
+window.payModeDefault = function(id) {
+  const r = PAY.reqs.find(function(x) { return x.id === id; });
+  const sel = document.getElementById('pay-do-mode');
+  if (!r || !sel) return;
+  const want = r.mode === 'cash' ? 'cash:shop' : (r.mode || 'upi') + ':bank';
+  if ([].some.call(sel.options, function(o) { return o.value === want; })) sel.value = want;
+};
+
+// The money has actually been handed over / transferred: write the ledger
+// entry and close the request in one step, so neither can exist without the other.
+window.markPaid = async function(id) {
+  const r = PAY.reqs.find(function(x) { return x.id === id; }); if (!r || r.status !== 'approved') return;
+  const err = document.getElementById('pay-do-error');
+  const btn = document.getElementById('pay-do-save');
+  const parts = document.getElementById('pay-do-mode').value.split(':');
+  const mode = parts[0], paidFrom = parts[1];
+  const ref = document.getElementById('pay-do-ref').value.trim();
+  err.textContent = '';
+  if (mode !== 'cash' && !ref) { err.textContent = 'Enter the reference / UTR / cheque number.'; return; }
+  if (paidFrom === 'home' && S.role !== 'owner') return;
+  if (paidFrom === 'shop' && S.rec?.closingTime) { err.textContent = 'The day is closed. Pay from the drawer before closing, or pay from the bank.'; return; }
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const amount = r.approvedAmount;
+    const txnRef = db.collection('supplier_txns').doc();
+    const reqRef = db.collection('pay_requests').doc(id);
+    const txn = {
+      supplierId: r.supplierId, storeId: STORE_ID, type: r.kind, amt: amount, amount,
+      date: S.today, notes: r.note || '', mode, paidFrom, requestId: id,
+      by: S.user.displayName || S.user.email || 'Staff', byUid: S.user.uid,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+    if (ref) txn.ref = ref;
+    const paid = { status: 'paid', paidTxnId: txnRef.id, paidRef: ref, paidMode: mode, paidFrom,
+      paidByUid: S.user.uid, paidBy: S.user.email || '', paidAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (paidFrom === 'shop') {
+      txn.cashOutLinked = true;
+      const out = await appendEntry('expenses',
+        { amt: amount, desc: 'Paid to ' + (r.supplierName || 'supplier'), cat: 'Supplier payment', supTxnId: txnRef.id },
+        function(tx) { tx.set(txnRef, txn); tx.update(reqRef, paid); });
+      S.expenses = out.list;
+      renderExpenses(); calcClosing();
+    } else {
+      const batch = db.batch();
+      batch.set(txnRef, txn); batch.update(reqRef, paid);
+      await batch.commit();
+    }
+    logAudit('pay_paid', { requestId: id, txnId: txnRef.id, supplier: r.supplierName, amount, mode, paidFrom, ref });
+    PAY.payingId = null;
+    showToast('Paid ' + supFmt(amount) + ' to ' + (r.supplierName || 'supplier') + ' — ledger updated');
+    loadPayments();
+  } catch(e) { err.textContent = 'Error: ' + friendlyErr(e); btn.disabled = false; btn.textContent = 'Confirm paid'; }
 };
 
 // ════════════════════════════════════════════════════
