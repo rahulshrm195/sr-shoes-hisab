@@ -1,9 +1,20 @@
 rules_version = '2';
 
-// SR Shoes Hisab — Firestore security rules
+// SR Shoes Hisab — Firestore security rules (lock-down version, app v1.10.0+)
 // Paste into Firebase console → Firestore Database → Rules → Publish.
-// The app only hides owner features on screen; these rules are what
-// actually stop a staff login from reading or changing owner data.
+//
+// The app only hides things on screen. These rules are what actually stop
+// a staff login — even one using browser developer tools — from reading
+// or changing what it should not.
+//
+// Staff, in short:
+//   • can work only on TODAY's register, and cannot read any other day
+//   • can only ADD expense / cash-in / post-closing entries, never edit or remove
+//   • cannot change the opening once saved, or anything once the day is closed
+//   • cannot see today's expected opening until their own count is saved
+//   • cannot set or change a supplier's opening balance
+//   • can only add supplier transactions dated today, never edit or delete
+//   • cannot touch the activity log (nobody can change or delete it)
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -28,6 +39,22 @@ service cloud.firestore {
     // Fields that this write adds, removes or changes
     function changed() {
       return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // ── Dates, in India time. d is 'YYYY-MM-DD' ──────────
+    function dayStart(d) {
+      return timestamp.date(int(d[0:4]), int(d[5:7]), int(d[8:10]));
+    }
+    function nowIST() { return request.time + duration.value(330, 'm'); }
+    function isToday(d) {
+      return nowIST() >= dayStart(d) && nowIST() < dayStart(d) + duration.value(24, 'h');
+    }
+    function isTomorrow(d) {
+      return nowIST() >= dayStart(d) - duration.value(24, 'h') && nowIST() < dayStart(d);
+    }
+
+    function regPath(d) {
+      return /databases/$(database)/documents/registers/$(storeId() + '_' + d);
     }
 
     // ── USERS ────────────────────────────────────────────
@@ -85,14 +112,6 @@ service cloud.firestore {
     // ── DAILY REGISTERS ──────────────────────────────────
     match /registers/{regId} {
 
-      // True when the register's date is still in the future (India time).
-      // Used so staff can only write "expected opening" for a coming day,
-      // never for the day they are about to count.
-      function isFutureDay(d) {
-        return request.time + duration.value(330, 'm')
-          < timestamp.date(int(d[0:4]), int(d[5:7]), int(d[8:10]));
-      }
-
       function validShape() {
         return request.resource.data.storeId == storeId()
           && request.resource.data.date is string
@@ -100,35 +119,111 @@ service cloud.firestore {
           && regId == storeId() + '_' + request.resource.data.date;
       }
 
-      function closed()  { return resource.data.get('closingTime', null) != null; }
-      function opened()  { return resource.data.get('openingTime', null) != null; }
-
       function openingKeys() {
         return ['openingCash', 'openingCounts', 'openingNotes', 'countedBy',
                 'openingTime', 'mismatchReason'];
       }
+      function closingKeys() {
+        return ['closingCash', 'closingCounts', 'totalSales', 'phonepe', 'cardSales',
+                'cashSales', 'takenHome', 'closedBy', 'expenseTotal', 'cashInTotal',
+                'closingTime'];
+      }
 
-      // Staff open one day at a time; only the owner pulls date ranges (Reports).
-      allow get:  if isMember();
+      // The new list is the old list plus exactly ONE new entry at the end,
+      // stamped with this user and the current time.
+      function appendedOne(oldList, newList) {
+        return newList is list
+          && newList.size() == oldList.size() + 1
+          && (oldList.size() == 0 || newList[0:oldList.size()] == oldList)
+          && newList[oldList.size()].byUid == request.auth.uid
+          && newList[oldList.size()].amt is number
+          && newList[oldList.size()].amt > 0
+          && newList[oldList.size()].atMs is number
+          && newList[oldList.size()].atMs > request.time.toMillis() - 600000
+          && newList[oldList.size()].atMs < request.time.toMillis() + 600000;
+      }
+
+      function lastOf(l) { return l[l.size() - 1]; }
+
+      // What a STAFF login may write. old = the record before this write ({} if new).
+      function staffWriteOk(old, keys) {
+        let new = request.resource.data;
+        return isToday(new.date)
+          && new.updatedAt == request.time
+          // never the expected opening, never anything outside the known fields
+          && !keys.hasAny(['expectedOpening'])
+          && keys.hasOnly(openingKeys().concat(closingKeys())
+               .concat(['date', 'storeId', 'updatedAt', 'expenses', 'cashIn', 'postClosing', 'pcCashTotal']))
+          && (
+            old.get('closingTime', null) != null
+              // ── Day already closed: only ADD a post-closing entry ──
+              ? (
+                  keys.hasOnly(['postClosing', 'pcCashTotal', 'updatedAt'])
+                  && appendedOne(old.get('postClosing', []), new.postClosing)
+                  && new.pcCashTotal == old.get('pcCashTotal', 0)
+                       + (lastOf(new.postClosing).get('type', 'cash') != 'online' ? lastOf(new.postClosing).amt : 0)
+                )
+              // ── Day still open ──
+              : (
+                  // Opening: can be saved once, then it is locked
+                  (old.get('openingTime', null) == null || !keys.hasAny(openingKeys()))
+                  // Expenses and cash-in: untouched, or exactly one added
+                  && (!keys.hasAny(['expenses']) || appendedOne(old.get('expenses', []), new.expenses))
+                  && (!keys.hasAny(['cashIn'])   || appendedOne(old.get('cashIn', []),   new.cashIn))
+                  // Post-closing entries only exist after closing
+                  && !keys.hasAny(['postClosing', 'pcCashTotal'])
+                  // Closing: all-or-nothing, with a closing time
+                  && (!keys.hasAny(closingKeys())
+                      || (new.get('closingTime', null) != null && new.closingCash is number && new.takenHome is number))
+                )
+          );
+      }
+
+      // Staff may open ONLY today's register; the owner pulls any day or range.
+      // regId is 'sr-shoes-main_YYYY-MM-DD'
+      allow get:  if isOwner() || (isMember() && regId.size() == 24 && isToday(regId[14:24]));
       allow list: if isOwner();
 
       allow create: if isMember() && validShape()
-        && (isOwner()
-          || !('expectedOpening' in request.resource.data)
-          || isFutureDay(request.resource.data.date));
+        && (isOwner() || staffWriteOk({}, request.resource.data.keys().toSet()));
 
       allow update: if isMember() && validShape()
+        && (isOwner() || staffWriteOk(resource.data, changed()));
+
+      allow delete: if isOwner();
+    }
+
+    // ── EXPECTED OPENING ("carry forward"), one record per day ──
+    // Kept apart from the register so the opening count stays blind.
+    match /carry/{carryId} {
+
+      function regAfter(d) { return getAfter(regPath(d)).data; }
+
+      // Staff may read today's figure only AFTER their opening count is saved
+      allow get: if isOwner()
+        || (isMember()
+            && carryId.size() == 24 && isToday(carryId[14:24])
+            && exists(regPath(carryId[14:24]))
+            && get(regPath(carryId[14:24])).data.get('openingTime', null) != null);
+      allow list: if isOwner();
+
+      // Staff may write only TOMORROW's figure, and only the exact amount
+      // that today's closed register works out to.
+      allow create, update: if isMember()
+        && request.resource.data.storeId == storeId()
+        && carryId == storeId() + '_' + request.resource.data.date
         && (isOwner()
           || (
-            // Day already closed: staff may only add post-closing entries
-            closed()
-              ? changed().hasOnly(['postClosing', 'updatedAt'])
-              : (
-                // Opening already saved: staff cannot alter it
-                (!opened() || !changed().hasAny(openingKeys()))
-                // Expected opening: staff may set it only for a future day
-                && (!changed().hasAny(['expectedOpening']) || isFutureDay(request.resource.data.date))
-              )
+            isTomorrow(request.resource.data.date)
+            && isToday(request.resource.data.fromDate)
+            && request.resource.data.byUid == request.auth.uid
+            && request.resource.data.at == request.time
+            && request.resource.data.keys().hasOnly(['date', 'fromDate', 'storeId', 'amount', 'byUid', 'at'])
+            && regAfter(request.resource.data.fromDate).get('closingTime', null) != null
+            && request.resource.data.amount ==
+                 regAfter(request.resource.data.fromDate).closingCash
+                 - regAfter(request.resource.data.fromDate).takenHome
+                 + regAfter(request.resource.data.fromDate).get('pcCashTotal', 0)
           ));
 
       allow delete: if isOwner();
@@ -137,15 +232,50 @@ service cloud.firestore {
     // ── SUPPLIERS ────────────────────────────────────────
     match /suppliers/{id} {
       allow read: if isMember();
-      allow create, update: if isMember() && request.resource.data.storeId == storeId();
+
+      // Staff may add a supplier, but only with a zero opening balance
+      allow create: if isMember() && request.resource.data.storeId == storeId()
+        && (isOwner() || request.resource.data.get('openingBalance', 0) == 0);
+
+      // Staff may correct contact details only — never the opening balance
+      allow update: if isMember() && request.resource.data.storeId == storeId()
+        && (isOwner() || changed().hasOnly(['name', 'phone', 'city', 'notes', 'updatedAt']));
+
       allow delete: if isOwner();
     }
 
     match /supplier_txns/{id} {
       allow read: if isMember();
-      allow create: if isMember() && request.resource.data.storeId == storeId();
+
+      // Staff: today's date only, stamped with who and when, a real supplier
+      allow create: if isMember() && request.resource.data.storeId == storeId()
+        && (isOwner()
+          || (
+            request.resource.data.byUid == request.auth.uid
+            && request.resource.data.createdAt == request.time
+            && request.resource.data.amount is number
+            && request.resource.data.amount > 0
+            && request.resource.data.date is string
+            && request.resource.data.date.size() == 10
+            && isToday(request.resource.data.date)
+            && request.resource.data.type in ['purchase', 'payment', 'part_payment', 'return',
+                                             'advance', 'debit_note', 'credit_note']
+            && exists(/databases/$(database)/documents/suppliers/$(request.resource.data.supplierId))
+          ));
+
       allow update: if isOwner() && request.resource.data.storeId == storeId();
       allow delete: if isOwner();
+    }
+
+    // ── ACTIVITY LOG ─────────────────────────────────────
+    // Write-once. Nobody — not even the owner — can change or delete an entry.
+    match /audit/{id} {
+      allow read: if isOwner();
+      allow create: if isMember()
+        && request.resource.data.storeId == storeId()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.at == request.time;
+      allow update, delete: if false;
     }
 
     // ── PUSH NOTIFICATION DEVICES ────────────────────────

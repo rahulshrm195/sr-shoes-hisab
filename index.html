@@ -491,7 +491,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.9.2</div>
+  <div class="auth-ver">v1.10.0</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -514,7 +514,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.9.2</div>
+    <div class="topbar-ver">v1.10.0</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -1189,7 +1189,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.9.2</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.10.0</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1206,6 +1206,12 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div id="cat-error" style="font-size:.72rem;color:var(--red);font-family:var(--mono);margin-top:6px;min-height:1em"></div>
       </div>
 
+      <div class="card" style="margin-top:.875rem;display:none" id="audit-card">
+        <div class="card-title">Activity log</div>
+        <div style="font-size:.75rem;font-family:var(--mono);color:var(--muted);margin-bottom:.75rem">Every save, edit and delete, with who did it and when. Entries can never be changed or removed.</div>
+        <button class="btn-outline" onclick="loadAuditLog()" style="padding:8px 14px;font-size:.78rem">Show latest 100</button>
+        <div id="audit-list" style="margin-top:.75rem"></div>
+      </div>
       <div class="card" style="margin-top:.875rem" id="users-card">
         <div class="card-title">App users</div>
         <div id="users-list"><div class="spinner"></div></div>
@@ -1224,6 +1230,16 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <button id="cl-toggle-top" onclick="toggleOlderCl()" style="background:none;border:.5px solid var(--border2);border-radius:20px;padding:5px 16px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer;margin-bottom:10px">Show older versions ▾</button>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.10.0 <span class="cl-date">17 Nov 2026</span></div>
+            <div class="cl-item">&#10003; Entries can only be added by staff, never edited or removed &mdash; enforced by the database</div>
+            <div class="cl-item">&#10003; Blind count secured: expected opening is hidden from staff until their count is saved</div>
+            <div class="cl-item">&#10003; Staff can work only on today's register and cannot open other days</div>
+            <div class="cl-item">&#10003; Supplier opening balance can be set or changed by the owner only</div>
+            <div class="cl-item">&#10003; Staff supplier transactions are always dated today &mdash; no back-dating</div>
+            <div class="cl-item">&#10003; New Activity log in Settings (owner): every save, edit and delete with who and when</div>
+            <div class="cl-item">&#10003; Two devices adding entries at the same time no longer overwrite each other</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.9.2 <span class="cl-date">17 Nov 2026</span></div>
             <div class="cl-item">&#10003; Suppliers &rarr; Day Book: see every supplier purchase and payment for today or any date, with totals</div>
@@ -1840,7 +1856,119 @@ async function loadRange(from, to) {
     .where('date', '>=', from)
     .where('date', '<=', to)
     .orderBy('date', 'desc').get();
-  return snap.docs.map(d => d.data());
+  const recs = snap.docs.map(d => d.data());
+  // Expected opening now lives in its own owner-only records — attach it for the reports
+  try {
+    const cs = await db.collection('carry').where('storeId','==',STORE_ID).where('date','>=',from).where('date','<=',to).get();
+    const byDate = {};
+    cs.docs.forEach(d => { byDate[d.data().date] = d.data().amount; });
+    recs.forEach(r => { if (r.expectedOpening == null && byDate[r.date] != null) r.expectedOpening = byDate[r.date]; });
+  } catch(e) { console.warn('Carry range load:', e.message); }
+  return recs;
+}
+
+// ════════════════════════════════════════════════════
+// LOCKED-DOWN SAVE HELPERS
+// The security rules (firestore.rules) only accept writes shaped the
+// way these helpers make them, so entries cannot be altered or removed
+// by staff, even from outside the app.
+// ════════════════════════════════════════════════════
+
+// "Expected opening" for a day. Kept apart from the register so staff
+// cannot read it until they have saved their own count.
+function carryRef(date) {
+  return db.collection('carry').doc(STORE_ID + '_' + date);
+}
+
+function nextDate(d) {
+  const p = d.split('-').map(Number);
+  return dateKey(new Date(p[0], p[1]-1, p[2]+1));
+}
+
+function carryData(rec, pcCashTotal) {
+  return {
+    date: nextDate(S.today), fromDate: S.today, storeId: STORE_ID,
+    amount: (rec.closingCash || 0) - (rec.takenHome || 0) + (pcCashTotal || 0),
+    byUid: S.user.uid, at: firebase.firestore.FieldValue.serverTimestamp()
+  };
+}
+
+function friendlyErr(e) {
+  const m = (e && e.message) || String(e);
+  if ((e && e.code === 'permission-denied') || /insufficient permissions/i.test(m)) {
+    return 'Not allowed. Check the date and time on this device, reload the app, or ask the owner.';
+  }
+  return m;
+}
+
+// Activity log — one line per action. Written once, can never be changed or deleted.
+function logAudit(action, details) {
+  try {
+    db.collection('audit').add({
+      storeId: STORE_ID, action, details: details || {},
+      uid: S.user.uid, email: S.user.email || '', role: S.role, day: S.today,
+      at: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(e => console.warn('Audit:', e.message));
+  } catch(e) { console.warn('Audit:', e.message); }
+}
+
+// Add ONE entry to today's expenses / cashIn / postClosing list.
+// Reads the latest list from the server first, so two devices adding at the
+// same moment can never overwrite each other. Returns the fresh list.
+async function appendEntry(field, entry) {
+  const ref = regRef(S.today);
+  const out = await db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    const cur  = snap.exists ? snap.data() : {};
+    const list = (cur[field] || []).slice();
+    const id   = list.reduce((m, x) => Math.max(m, Number(x.id) || 0), -1) + 1;
+    const full = { ...entry, id, byUid: S.user.uid, by: S.user.email || '', atMs: Date.now() };
+    list.push(full);
+    const upd = { date: S.today, storeId: STORE_ID, [field]: list, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (field === 'postClosing') {
+      upd.pcCashTotal = (cur.pcCashTotal || 0) + (full.type !== 'online' ? full.amt : 0);
+      tx.set(carryRef(nextDate(S.today)), carryData(cur, upd.pcCashTotal));
+    }
+    tx.set(ref, upd, { merge: true });
+    return { list, full, pcCashTotal: upd.pcCashTotal };
+  });
+  if (field === 'postClosing') S.rec = { ...S.rec, pcCashTotal: out.pcCashTotal };
+  logAudit(field + '_added', { amt: out.full.amt, desc: out.full.desc || '', cat: out.full.cat || out.full.type || '' });
+  return out;
+}
+
+// Loads today's expected opening into S.rec.expectedOpening — only when this
+// user is allowed to see it (owner always; staff only after saving the opening).
+async function loadCarry() {
+  const canSee = S.role === 'owner' || !!S.rec?.openingTime;
+  const legacy = S.rec?.expectedOpening;   // older versions stored it inside the register
+  let amt = null;
+  if (canSee) {
+    try {
+      const snap = await carryRef(S.today).get();
+      if (snap.exists) amt = snap.data().amount;
+    } catch(e) { /* not permitted or offline — treat as unknown */ }
+    if (amt == null && legacy != null) amt = legacy;
+  }
+  if (S.rec) { if (amt != null) S.rec.expectedOpening = amt; else delete S.rec.expectedOpening; }
+  else if (amt != null) S.rec = { date: S.today, expectedOpening: amt };
+
+  // One-time tidy-up by the owner: move an old-style value out of the register
+  if (S.role === 'owner' && legacy != null) {
+    try {
+      const batch = db.batch();
+      batch.set(carryRef(S.today), {
+        date: S.today, fromDate: null, storeId: STORE_ID, amount: amt,
+        byUid: S.user.uid, at: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      batch.set(regRef(S.today), {
+        date: S.today, storeId: STORE_ID,
+        expectedOpening: firebase.firestore.FieldValue.delete(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      await batch.commit();
+    } catch(e) { console.warn('Carry migrate:', e.message); }
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -1995,6 +2123,7 @@ async function boot() {
   await loadRole();
 
   // Yesterday's closing / expected opening — needs the role, so it runs here
+  await loadCarry();
   showCarryBanner();
 
   // Update stats bar after role is known
@@ -2066,6 +2195,8 @@ function applyRole() {
   const catCard   = document.getElementById('exp-categories-card');
   const usersCard = document.getElementById('users-card');
   if (catCard)   catCard.style.display   = isOwner ? '' : 'none';
+  const auditCard = document.getElementById('audit-card');
+  if (auditCard) auditCard.style.display = isOwner ? '' : 'none';
   if (usersCard) usersCard.style.display = isOwner ? '' : 'none';
   // Tomorrow's opening and taken home — hidden from staff everywhere (prevents blind count manipulation)
   const tomorrowRow   = document.getElementById('ss-tomorrow-row');
@@ -2177,10 +2308,8 @@ window.saveDcEntry = async function() {
   err.textContent = '';
   if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; return; }
   if (!S.postClosing)   S.postClosing   = [];
-  if (!S.postClosingId) S.postClosingId = S.postClosing.length;
-  S.postClosing.push({ id: S.postClosingId++, amt, desc, type: dcType, time: new Date().toISOString() });
   try {
-    await saveRec({ date: S.today, postClosing: S.postClosing });
+    S.postClosing = (await appendEntry('postClosing', { amt, desc, type: dcType, time: new Date().toISOString() })).list;
     document.getElementById('dc-amt').value  = '';
     document.getElementById('dc-desc').value = '';
     // Refresh entry list
@@ -2193,8 +2322,7 @@ window.saveDcEntry = async function() {
     ).join('');
     showToast('Post-closing entry saved');
   } catch(e) {
-    S.postClosing.pop();
-    err.textContent = 'Error: ' + e.message;
+    err.textContent = 'Error: ' + friendlyErr(e);
   }
 };
 
@@ -2360,6 +2488,9 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
     };
     await saveRec(data);
     S.rec = { ...S.rec, ...data };
+    logAudit('opening_saved', { openingCash: data.openingCash, countedBy: data.countedBy });
+    // The count is now locked in, so this user may see what was expected
+    await loadCarry();
     console.log('[Save Opening] openingCash:', data.openingCash, 'counts:', JSON.stringify(data.openingCounts));
     saveBtnState(btn, 'saved', 'Save opening');
     showToast('Opening saved');
@@ -2376,7 +2507,7 @@ document.getElementById('btn-save-opening').addEventListener('click', async () =
     // Small delay to show saved state, then lock
     if (window._openingLockTimer) clearTimeout(window._openingLockTimer);
     window._openingLockTimer = setTimeout(() => lockOpening(), 1600);
-      } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save opening'); }
+      } catch(e) { showToast('Error: ' + friendlyErr(e)); saveBtnState(btn, 'error', 'Save opening'); }
 });
 
 // ════════════════════════════════════════════════════
@@ -2420,9 +2551,10 @@ function renderCashIn() {
 
 window.delCashIn = async id => {
   if (S.role !== 'owner') return;
+  const goneIn = S.cashIn.find(x=>x.id===id);
   S.cashIn = S.cashIn.filter(x=>x.id!==id);
-  try { await saveRec({date:S.today,cashIn:S.cashIn}); renderCashIn(); calcClosing(); showToast('Entry removed'); }
-  catch(e) { showToast('Error: '+e.message); }
+  try { await saveRec({date:S.today,cashIn:S.cashIn}); logAudit('cashIn_removed', goneIn || { id }); renderCashIn(); calcClosing(); showToast('Entry removed'); }
+  catch(e) { showToast('Error: '+friendlyErr(e)); }
 };
 
 document.getElementById('btn-save-one-cashin')?.addEventListener('click', async () => {
@@ -2435,9 +2567,8 @@ document.getElementById('btn-save-one-cashin')?.addEventListener('click', async 
   const err=document.getElementById('cashin-error');
   err.textContent='';
   if(!amt||amt<=0){err.textContent='Enter a valid amount.';btn.disabled=false;btn.textContent='Save cash in';return;}
-  S.cashIn.push({id:S.cashInId++,amt,desc,cat});
   try {
-    await saveRec({date:S.today,cashIn:S.cashIn});
+    S.cashIn = (await appendEntry('cashIn', { amt, desc, cat })).list;
     document.getElementById('cashin-amt').value='';
     document.getElementById('cashin-desc').value='';
     document.getElementById('cashin-cat').selectedIndex=0;
@@ -2450,8 +2581,7 @@ document.getElementById('btn-save-one-cashin')?.addEventListener('click', async 
       navigator.serviceWorker.ready.then(reg=>{reg.showNotification('SR Shoes - Cash In',{body:cat+(desc?': '+desc:'')+' +'+fmtN(amt),icon:'/icon-192.png',badge:'/icon-192.png',tag:'cashin-'+Date.now(),vibrate:[100,50,100]});});
     }
   } catch(e) {
-    S.cashIn.pop();
-    err.textContent='Error: '+e.message;
+    err.textContent='Error: '+friendlyErr(e);
     btn.disabled=false; btn.textContent='Save cash in';
   }
 });
@@ -2491,12 +2621,14 @@ function renderExpenses() {
 
 window.delExp = async id => {
   if (S.role !== 'owner') return;
+  const goneExp = S.expenses.find(x => x.id === id);
   S.expenses = S.expenses.filter(x => x.id !== id);
   try {
     await saveRec({ date: S.today, expenses: S.expenses });
+    logAudit('expenses_removed', goneExp || { id });
     renderExpenses(); calcClosing();
     showToast('Expense removed');
-  } catch(e) { showToast('Error: ' + e.message); }
+  } catch(e) { showToast('Error: ' + friendlyErr(e)); }
 };
 
 document.getElementById('btn-save-one-expense').addEventListener('click', async () => {
@@ -2509,11 +2641,10 @@ document.getElementById('btn-save-one-expense').addEventListener('click', async 
   const err  = document.getElementById('exp-error');
   err.textContent = '';
   if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; saveBtn.disabled = false; return; }
-  S.expenses.push({ id: S.expId++, amt, desc, cat });
   const btn = document.getElementById('btn-save-one-expense');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    await saveRec({ date: S.today, expenses: S.expenses });
+    S.expenses = (await appendEntry('expenses', { amt, desc, cat })).list;
     document.getElementById('exp-amt').value  = '';
     document.getElementById('exp-desc').value = '';
     document.getElementById('exp-cat').selectedIndex = 0;
@@ -2532,8 +2663,7 @@ document.getElementById('btn-save-one-expense').addEventListener('click', async 
       });
     }
   } catch(e) {
-    S.expenses.pop();
-    err.textContent = 'Error: ' + e.message;
+    err.textContent = 'Error: ' + friendlyErr(e);
     btn.disabled = false; btn.textContent = 'Save expense';
   }
 });
@@ -2666,11 +2796,15 @@ document.getElementById('btn-confirm-close-ok').addEventListener('click', async 
       cashInTotal,
       closingTime: new Date().toISOString()
     };
-    await saveRec(data);
-    // Save tomorrow's expected opening to TOMORROW's document only
-    const tomorrowDate = dateKey(new Date(Date.now() + 86400000));
-    await saveRec({ date: tomorrowDate, expectedOpening: tomorrowOpening });
+    // The closing and tomorrow's expected opening are saved together, or not at all
+    const pcCash = S.rec?.pcCashTotal || 0;
+    const closeBatch = db.batch();
+    closeBatch.set(regRef(S.today), { ...data, storeId: STORE_ID, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    closeBatch.set(carryRef(nextDate(S.today)), carryData(data, pcCash));
+    await closeBatch.commit();
+    const wasClosed = !!S.rec?.closingTime;
     S.rec = { ...S.rec, ...data };
+    logAudit(wasClosed ? 'closing_edited' : 'closing_saved', { closingCash: closeCash, totalSales, phonepe, cardSales: card, takenHome, closedBy, carriedForward: tomorrowOpening + pcCash });
     saveBtnState(btn, 'saved', 'Save & close day');
     showToast('Day closed — ' + fmtN(tomorrowOpening) + ' carried forward to tomorrow');
     lockClosing();
@@ -2687,7 +2821,7 @@ document.getElementById('btn-confirm-close-ok').addEventListener('click', async 
         });
       });
     }
-  } catch(e) { showToast('Error: ' + e.message); saveBtnState(btn, 'error', 'Save & close day'); }
+  } catch(e) { showToast('Error: ' + friendlyErr(e)); saveBtnState(btn, 'error', 'Save & close day'); }
 });
 
 // Edit closing button (owner only)
@@ -2821,7 +2955,7 @@ async function loadMonthly() {
   } catch(e) {
     if (spinner) spinner.style.display = 'none';
     console.error('[Reports] Error:', e);
-    showToast('Error: ' + e.message);
+    showToast('Error: ' + friendlyErr(e));
   }
 }
 
@@ -2946,6 +3080,7 @@ async function loadUsers() {
 window.toggleRole = async (uid, currentRole) => {
   const newRole = currentRole === 'owner' ? 'staff' : 'owner';
   await db.collection('users').doc(uid).update({ role: newRole });
+  logAudit('role_changed', { userUid: uid, from: currentRole, to: newRole });
   showToast('Role updated to ' + newRole);
   loadUsers();
 };
@@ -2964,9 +3099,43 @@ document.getElementById('btn-add-user').addEventListener('click', async () => {
   // Doc id = email, so the security rules can check the pre-approved role on first login
   await db.collection('pendingUsers').doc(email).set({ email, role, storeId: STORE_ID, addedBy: S.user.uid, addedAt: firebase.firestore.FieldValue.serverTimestamp() });
   document.getElementById('new-user-email').value = '';
+  logAudit('user_preapproved', { email, role });
   showToast(email + ' added as ' + role + ' — they can now log in');
   loadUsers();
 });
+
+// Activity log viewer — owner only
+const AUDIT_LABELS = {
+  opening_saved:'Opening saved', closing_saved:'Day closed', closing_edited:'Closing edited',
+  expenses_added:'Expense added', expenses_removed:'Expense removed',
+  cashIn_added:'Cash in added', cashIn_removed:'Cash in removed',
+  postClosing_added:'Post-closing entry added', postClosing_removed:'Post-closing entry removed',
+  supplier_added:'Supplier added', supplier_edited:'Supplier edited', supplier_deleted:'Supplier deleted',
+  supplier_txn_added:'Supplier transaction added', supplier_txn_deleted:'Supplier transaction deleted',
+  role_changed:'User role changed', user_preapproved:'User pre-approved',
+  settings_saved:'Settings saved', categories_changed:'Expense categories changed'
+};
+window.loadAuditLog = async function() {
+  const el = document.getElementById('audit-list');
+  el.innerHTML = '<div style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">Loading...</div>';
+  try {
+    const snap = await db.collection('audit').orderBy('at','desc').limit(100).get();
+    if (snap.empty) { el.innerHTML = '<div style="font-family:var(--mono);font-size:.8rem;color:var(--hint)">Nothing recorded yet</div>'; return; }
+    el.innerHTML = snap.docs.map(function(d) {
+      const a = d.data();
+      const when = a.at && a.at.toDate ? a.at.toDate().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+      const det = Object.keys(a.details || {}).map(function(k) {
+        const v = a.details[k];
+        return k + ': ' + (v !== null && typeof v === 'object' ? JSON.stringify(v) : v);
+      }).join(' · ');
+      return '<div style="padding:8px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.76rem">' +
+        '<div style="display:flex;justify-content:space-between;gap:10px"><span style="font-weight:600;color:var(--text)">' + esc(AUDIT_LABELS[a.action] || a.action) + '</span><span style="color:var(--hint);white-space:nowrap">' + esc(when) + '</span></div>' +
+        '<div style="color:var(--muted);margin-top:2px">' + esc(a.email || a.uid) + ' (' + esc(a.role || '') + ')</div>' +
+        (det ? '<div style="color:var(--hint);margin-top:2px;word-break:break-word">' + esc(det) + '</div>' : '') +
+      '</div>';
+    }).join('');
+  } catch(e) { el.innerHTML = '<div style="font-family:var(--mono);font-size:.8rem;color:var(--red)">' + esc(friendlyErr(e)) + '</div>'; }
+};
 
 // Auto-register user on login and apply pending role
 async function registerUserOnLogin(user) {
@@ -3048,6 +3217,7 @@ window.deleteCat = async (i) => {
   const cat = EXP_CATS[i];
   EXP_CATS.splice(i, 1);
   await db.collection('settings').doc(STORE_ID).set({ expenseCategories: EXP_CATS }, { merge: true });
+  logAudit('categories_changed', { categories: EXP_CATS.slice() });
   renderCatList();
   showToast(cat + ' removed');
 };
@@ -3063,6 +3233,7 @@ document.getElementById('btn-add-cat')?.addEventListener('click', async () => {
   }
   EXP_CATS.push(name);
   await db.collection('settings').doc(STORE_ID).set({ expenseCategories: EXP_CATS }, { merge: true });
+  logAudit('categories_changed', { categories: EXP_CATS.slice() });
   input.value = '';
   renderCatList();
   showToast(name + ' added');
@@ -3075,6 +3246,7 @@ document.getElementById('new-cat-input')?.addEventListener('keydown', e => {
 document.getElementById('btn-save-settings').addEventListener('click', async () => {
   S.settings = { eodTime: document.getElementById('eod-time').value, lowCashAlert: parseFloat(document.getElementById('low-cash').value)||500 };
   await db.collection('settings').doc(STORE_ID).set(S.settings, {merge:true});
+  logAudit('settings_saved', S.settings);
   showToast('Settings saved'); scheduleEOD();
 });
 
@@ -3408,8 +3580,15 @@ function renderPostClosing() {
 
 window.delPostClosing = async id => {
   if (S.role !== 'owner') return;
+  const gonePc = S.postClosing.find(x=>x.id===id);
   S.postClosing = S.postClosing.filter(x=>x.id!==id);
-  await saveRec({date:S.today, postClosing:S.postClosing});
+  const pcCash = S.postClosing.filter(e=>e.type!=='online').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const pcBatch = db.batch();
+  pcBatch.set(regRef(S.today), { date: S.today, storeId: STORE_ID, postClosing: S.postClosing, pcCashTotal: pcCash, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+  pcBatch.set(carryRef(nextDate(S.today)), carryData(S.rec || {}, pcCash));
+  await pcBatch.commit();
+  S.rec = { ...S.rec, pcCashTotal: pcCash };
+  logAudit('postClosing_removed', gonePc || { id });
   renderPostClosing();
   showToast('Entry removed');
 };
@@ -3423,9 +3602,8 @@ document.getElementById('btn-save-pc')?.addEventListener('click', async () => {
   const err  = document.getElementById('pc-error');
   err.textContent = '';
   if (!amt || amt <= 0) { err.textContent = 'Enter a valid amount.'; btn.disabled=false; return; }
-  S.postClosing.push({id:S.postClosingId++, amt, desc, type: pcType, time: new Date().toISOString()});
   try {
-    await saveRec({date:S.today, postClosing:S.postClosing});
+    S.postClosing = (await appendEntry('postClosing', { amt, desc, type: pcType, time: new Date().toISOString() })).list;
     document.getElementById('pc-amt').value = '';
     document.getElementById('pc-desc').value = '';
     renderPostClosing();
@@ -3443,8 +3621,7 @@ document.getElementById('btn-save-pc')?.addEventListener('click', async () => {
       });
     }
   } catch(e) {
-    S.postClosing.pop();
-    err.textContent = 'Error: ' + e.message;
+    err.textContent = 'Error: ' + friendlyErr(e);
     btn.disabled = false;
   }
 });
@@ -3926,13 +4103,16 @@ window.delTxn = async function(txnId, supId) {
   if (S.role !== 'owner') return;
   if (!confirm('Delete this transaction? This cannot be undone.')) return;
   try {
+    const goneTxn = (SUP.txns[supId] || []).find(t => t.id === txnId) || {};
     await db.collection('supplier_txns').doc(txnId).delete();
+    logAudit('supplier_txn_deleted', { supplierId: supId, txnId, type: goneTxn.type || '', amount: goneTxn.amount || 0,
+      date: goneTxn.date || '', billNo: goneTxn.billNo || '', ref: goneTxn.ref || '', enteredBy: goneTxn.by || '' });
     SUP.txns[supId] = SUP.txns[supId].filter(t => t.id !== txnId);
     const sup = SUP.suppliers.find(s => s.id === supId);
     if (sup) { renderLedgerBalance(sup); renderLedgerTxns(sup); }
     renderSupOverview();
     showToast('Transaction deleted');
-  } catch(e) { showToast('Error: ' + e.message); }
+  } catch(e) { showToast('Error: ' + friendlyErr(e)); }
 };
 
 // ════════════════════════════════════════════════════
@@ -3953,6 +4133,15 @@ window.openSupModal = function(supId) {
   if (delBtn) delBtn.style.display = (sup && S.role === 'owner') ? 'block' : 'none';
   const dir = sup ? (sup.openingBalance >= 0 ? 'we_owe' : 'they_owe') : 'we_owe';
   setObDir(dir);
+  // Opening balance decides what we owe — only the owner may set or change it
+  const obLocked = S.role !== 'owner';
+  const obInput  = document.getElementById('sup-ob');
+  obInput.readOnly = obLocked; obInput.style.opacity = obLocked ? '0.6' : '';
+  if (obLocked && !sup) obInput.value = 0;
+  ['sup-ob-we-owe','sup-ob-they-owe'].forEach(function(id) {
+    const b = document.getElementById(id);
+    if (b) { b.disabled = obLocked; b.style.pointerEvents = obLocked ? 'none' : ''; }
+  });
   document.getElementById('sup-modal').classList.add('open');
 };
 
@@ -3981,21 +4170,30 @@ window.saveSupplier = async function() {
   const signedOb = SUP.obDir === 'we_owe' ? ob : -ob;
   const data = {
     name, phone, city, notes,
-    openingBalance: signedOb,
     storeId: STORE_ID,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
+  const isOwner = S.role === 'owner';
+  const before  = SUP.editSupId ? SUP.suppliers.find(s=>s.id===SUP.editSupId) : null;
+  // Only the owner sets the opening balance; a supplier added by staff starts at zero
+  if (isOwner) data.openingBalance = signedOb;
+  else if (!SUP.editSupId) data.openingBalance = 0;
 
   try {
     const btn = document.getElementById('sup-modal-save');
     btn.disabled = true; btn.textContent = 'Saving…';
     if (SUP.editSupId) {
       await db.collection('suppliers').doc(SUP.editSupId).set(data, { merge: true });
+      logAudit('supplier_edited', { supplierId: SUP.editSupId, name,
+        openingBalanceBefore: before ? (before.openingBalance || 0) : null,
+        openingBalanceAfter: isOwner ? signedOb : (before ? (before.openingBalance || 0) : null),
+        nameBefore: before ? before.name : null });
       const i = SUP.suppliers.findIndex(s=>s.id===SUP.editSupId);
       if (i>=0) SUP.suppliers[i] = { ...SUP.suppliers[i], ...data };
     } else {
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       const ref = await db.collection('suppliers').add(data);
+      logAudit('supplier_added', { supplierId: ref.id, name, openingBalance: data.openingBalance });
       SUP.suppliers.push({ id: ref.id, ...data });
       SUP.suppliers.sort((a,b)=>a.name.localeCompare(b.name));
     }
@@ -4008,7 +4206,7 @@ window.saveSupplier = async function() {
   } catch(e) {
     document.getElementById('sup-modal-save').disabled = false;
     document.getElementById('sup-modal-save').textContent = 'Save Supplier';
-    err.textContent = 'Error: ' + e.message;
+    err.textContent = 'Error: ' + friendlyErr(e);
   }
 };
 
@@ -4034,6 +4232,8 @@ window.deleteSupplier = async function() {
     // Delete supplier doc
     batch.delete(db.collection('suppliers').doc(supId));
     await batch.commit();
+    logAudit('supplier_deleted', { supplierId: supId, name: sup.name, openingBalance: sup.openingBalance || 0,
+      transactionsDeleted: txnSnap.size, balanceAtDelete: computeBalance(sup, SUP.txns[supId] || []) });
     // Remove from local state
     SUP.suppliers = SUP.suppliers.filter(function(s){ return s.id !== supId; });
     delete SUP.txns[supId];
@@ -4047,7 +4247,7 @@ window.deleteSupplier = async function() {
     SUP.editSupId = null;
   } catch(e) {
     document.getElementById('sup-modal-save').disabled = false;
-    document.getElementById('sup-modal-error').textContent = 'Error: ' + e.message;
+    document.getElementById('sup-modal-error').textContent = 'Error: ' + friendlyErr(e);
   }
 };
 window.openTxnModal = function() {
@@ -4057,6 +4257,11 @@ window.openTxnModal = function() {
   document.getElementById('txn-mode').value  = 'cash';
   document.getElementById('txn-ref').value   = '';
   document.getElementById('txn-date').value  = dateKey();
+  // Staff can only record a transaction on today's date — no back-dating
+  const txnDateEl = document.getElementById('txn-date');
+  const dateLocked = S.role !== 'owner';
+  txnDateEl.readOnly = dateLocked; txnDateEl.style.opacity = dateLocked ? '0.6' : '';
+  txnDateEl.min = dateLocked ? dateKey() : ''; txnDateEl.max = dateLocked ? dateKey() : '';
   document.getElementById('txn-notes').value = '';
   document.getElementById('txn-modal-error').textContent = '';
   setTxnDir('purchase'); // default to purchase side
@@ -4120,7 +4325,7 @@ window.saveTxn = async function() {
   const billNo = document.getElementById('txn-billno').value.trim();
   const mode   = document.getElementById('txn-mode').value;
   const ref    = document.getElementById('txn-ref').value.trim();
-  const date   = document.getElementById('txn-date').value || dateKey();
+  const date   = S.role === 'owner' ? (document.getElementById('txn-date').value || dateKey()) : dateKey();
   const notes  = document.getElementById('txn-notes').value.trim();
   const err    = document.getElementById('txn-modal-error');
   err.textContent = '';
@@ -4133,6 +4338,7 @@ window.saveTxn = async function() {
     type, amt, amount: amt,
     date, notes,
     by: S.user?.displayName || S.user?.email || 'Staff',
+    byUid: S.user.uid,
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
   };
   if (cfg.showBill && billNo) data.billNo = billNo;
@@ -4142,6 +4348,7 @@ window.saveTxn = async function() {
     const btn = document.getElementById('txn-modal-save');
     btn.disabled = true; btn.textContent = 'Saving…';
     const docRef = await db.collection('supplier_txns').add(data);
+    logAudit('supplier_txn_added', { supplierId: supId, txnId: docRef.id, type, amount: amt, date, billNo: data.billNo || '', mode: data.mode || '', ref: data.ref || '' });
     if (!SUP.txns[supId]) SUP.txns[supId] = [];
     SUP.txns[supId].push({ id: docRef.id, ...data });
     SUP.txns[supId].sort((a,b)=>a.date.localeCompare(b.date));
@@ -4154,7 +4361,7 @@ window.saveTxn = async function() {
   } catch(e) {
     document.getElementById('txn-modal-save').disabled = false;
     document.getElementById('txn-modal-save').textContent = 'Save Transaction';
-    err.textContent = 'Error: ' + e.message;
+    err.textContent = 'Error: ' + friendlyErr(e);
   }
 };
 
@@ -4287,6 +4494,9 @@ async function onAppFocus() {
 
   // Date has changed since boot — reload today's data
   if (newDate !== S.today) {
+    // With internet, a full reload is the cleanest fresh start and also
+    // picks up any newer version of the app. Offline, reset in place below.
+    if (navigator.onLine) { location.reload(); return; }
     S.today       = newDate;
     S.rec         = null;
     S.expenses    = [];
@@ -4321,6 +4531,7 @@ async function onAppFocus() {
         S.postClosingId = S.postClosing.length;
       }
     } catch(e) { console.warn('Date refresh load error:', e); }
+    await loadCarry();
 
     // Clear yesterday's figures and locks so nothing from the closed day is left on screen
     ['total-sales','phonepe-sales','card-sales','taken-home','closed-by','opening-notes','counted-by','mismatch-reason'].forEach(id => {
