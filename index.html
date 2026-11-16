@@ -491,7 +491,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.8.6</div>
+  <div class="auth-ver">v1.8.7</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -514,7 +514,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.8.6</div>
+    <div class="topbar-ver">v1.8.7</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -1178,7 +1178,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.8.6</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.8.7</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1213,6 +1213,11 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <button id="cl-toggle-top" onclick="toggleOlderCl()" style="background:none;border:.5px solid var(--border2);border-radius:20px;padding:5px 16px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer;margin-bottom:10px">Show older versions ▾</button>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.8.7 <span class="cl-date">17 Nov 2026</span></div>
+            <div class="cl-item">&#10003; Owner now sees yesterday's closing (expected cash) on the Opening tab — staff still count blind</div>
+            <div class="cl-item">&#10003; Overnight date change now fully clears yesterday's figures and locks</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.8.3 <span class="cl-date">14 Aug 2026</span></div>
             <div class="cl-item">&#10003; Updated changelog with all Aug 2026 entries</div>
@@ -1901,12 +1906,7 @@ async function boot() {
   
   // Carry-forward banner — only show to owner, and only if opening not yet saved
   // Staff should count blind to prevent manipulation
-  const prev = S.rec?.expectedOpening;
-  if (prev != null && !S.rec?.openingTime && S.role === 'owner') {
-    document.getElementById('carry-expected-val').innerHTML = fmt(prev);
-    document.getElementById('carry-banner').style.display = 'flex';
-    calcOpening();
-  }
+  // (shown by showCarryBanner() further down, once the role has been loaded)
 
   /*// Save FCM token if notifications already granted
   if ('Notification' in window && Notification.permission === 'granted' && typeof firebase !== 'undefined') {
@@ -1958,6 +1958,9 @@ async function boot() {
   // Load role BEFORE locking so edit buttons show correctly for owner
   await loadRole();
 
+  // Yesterday's closing / expected opening — needs the role, so it runs here
+  showCarryBanner();
+
   // Update stats bar after role is known
   updateStatsBar();
 
@@ -1975,6 +1978,23 @@ async function boot() {
   // Re-render lists now that role is known — delete buttons show correctly
   renderExpenses();
   if (typeof renderCashIn === 'function') renderCashIn();
+}
+
+// Yesterday's closing banner on the Opening tab.
+// Owner sees it straight away; staff only after the opening is saved (blind count).
+function showCarryBanner() {
+  const banner = document.getElementById('carry-banner');
+  if (!banner) return;
+  const prev = S.rec?.expectedOpening;
+  const show = prev != null && (S.role === 'owner' || !!S.rec?.openingTime);
+  banner.style.display = show ? 'flex' : 'none';
+  if (!show) {
+    const mr = document.getElementById('mismatch-row');
+    if (mr) mr.style.display = 'none';
+    return;
+  }
+  document.getElementById('carry-expected-val').innerHTML = fmt(prev);
+  calcOpening();
 }
 
 async function loadRole() {
@@ -4145,9 +4165,19 @@ async function onAppFocus() {
       }
     } catch(e) { console.warn('Date refresh load error:', e); }
 
+    // Clear yesterday's figures and locks so nothing from the closed day is left on screen
+    ['total-sales','phonepe-sales','card-sales','taken-home','closed-by','opening-notes','counted-by','mismatch-reason'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    unlockOpening();
+    unlockClosing();
+    const pcSec = document.getElementById('post-closing-section');
+    if (pcSec) pcSec.style.display = 'none';
+
     // Re-render fresh UI
     buildDenoms('open-denoms',  calcOpening);
     buildDenoms('close-denoms', calcClosing);
+    showCarryBanner();
     renderExpenses();
     if (typeof renderCashIn === 'function') renderCashIn();
     calcClosing();
