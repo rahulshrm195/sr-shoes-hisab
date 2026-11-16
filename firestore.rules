@@ -1,0 +1,163 @@
+rules_version = '2';
+
+// SR Shoes Hisab — Firestore security rules
+// Paste into Firebase console → Firestore Database → Rules → Publish.
+// The app only hides owner features on screen; these rules are what
+// actually stop a staff login from reading or changing owner data.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function storeId() { return 'sr-shoes-main'; }
+
+    function signedIn() { return request.auth != null; }
+
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // A user who has a user record for this store
+    function isMember() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && me().storeId == storeId();
+    }
+
+    function isOwner() { return isMember() && me().role == 'owner'; }
+
+    // Fields that this write adds, removes or changes
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // ── USERS ────────────────────────────────────────────
+    match /users/{uid} {
+      allow get:  if signedIn() && (request.auth.uid == uid || isOwner());
+      allow list: if isOwner();
+
+      // First login: a user creates their own record.
+      // Always as staff, unless the owner has pre-approved this email.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.storeId == storeId()
+        && request.resource.data.email == request.auth.token.email
+        && (
+          request.resource.data.role == 'staff'
+          || (
+            exists(/databases/$(database)/documents/pendingUsers/$(request.auth.token.email))
+            && get(/databases/$(database)/documents/pendingUsers/$(request.auth.token.email)).data.role
+               == request.resource.data.role
+          )
+        );
+
+      // Owner may change a user's role. Nobody can change their own role.
+      allow update: if
+        (isOwner()
+          && changed().hasOnly(['role'])
+          && request.resource.data.role in ['owner', 'staff'])
+        || (request.auth.uid == uid
+          && isMember()
+          && changed().hasOnly(['fcmToken']));
+
+      allow delete: if isOwner();
+    }
+
+    // ── PENDING USERS (owner pre-approves an email, doc id = email) ──
+    match /pendingUsers/{email} {
+      allow get:    if signedIn() && (request.auth.token.email == email || isOwner());
+      allow list:   if isOwner();
+      allow create, update: if isOwner()
+        && request.resource.data.storeId == storeId()
+        && request.resource.data.role in ['owner', 'staff'];
+      allow delete: if signedIn() && (request.auth.token.email == email || isOwner());
+    }
+
+    // ── SETTINGS ─────────────────────────────────────────
+    match /settings/{id} {
+      allow read: if isMember();
+      // Owner: anything. Staff: only the reminder time and low-cash alert.
+      allow create: if isOwner();
+      allow update: if isOwner()
+        || (isMember() && changed().hasOnly(['eodTime', 'lowCashAlert']));
+      allow delete: if false;
+    }
+
+    // ── DAILY REGISTERS ──────────────────────────────────
+    match /registers/{regId} {
+
+      // True when the register's date is still in the future (India time).
+      // Used so staff can only write "expected opening" for a coming day,
+      // never for the day they are about to count.
+      function isFutureDay(d) {
+        return request.time + duration.value(330, 'm')
+          < timestamp.date(int(d[0:4]), int(d[5:7]), int(d[8:10]));
+      }
+
+      function validShape() {
+        return request.resource.data.storeId == storeId()
+          && request.resource.data.date is string
+          && request.resource.data.date.size() == 10
+          && regId == storeId() + '_' + request.resource.data.date;
+      }
+
+      function closed()  { return resource.data.get('closingTime', null) != null; }
+      function opened()  { return resource.data.get('openingTime', null) != null; }
+
+      function openingKeys() {
+        return ['openingCash', 'openingCounts', 'openingNotes', 'countedBy',
+                'openingTime', 'mismatchReason'];
+      }
+
+      // Staff open one day at a time; only the owner pulls date ranges (Reports).
+      allow get:  if isMember();
+      allow list: if isOwner();
+
+      allow create: if isMember() && validShape()
+        && (isOwner()
+          || !('expectedOpening' in request.resource.data)
+          || isFutureDay(request.resource.data.date));
+
+      allow update: if isMember() && validShape()
+        && (isOwner()
+          || (
+            // Day already closed: staff may only add post-closing entries
+            closed()
+              ? changed().hasOnly(['postClosing', 'updatedAt'])
+              : (
+                // Opening already saved: staff cannot alter it
+                (!opened() || !changed().hasAny(openingKeys()))
+                // Expected opening: staff may set it only for a future day
+                && (!changed().hasAny(['expectedOpening']) || isFutureDay(request.resource.data.date))
+              )
+          ));
+
+      allow delete: if isOwner();
+    }
+
+    // ── SUPPLIERS ────────────────────────────────────────
+    match /suppliers/{id} {
+      allow read: if isMember();
+      allow create, update: if isMember() && request.resource.data.storeId == storeId();
+      allow delete: if isOwner();
+    }
+
+    match /supplier_txns/{id} {
+      allow read: if isMember();
+      allow create: if isMember() && request.resource.data.storeId == storeId();
+      allow update: if isOwner() && request.resource.data.storeId == storeId();
+      allow delete: if isOwner();
+    }
+
+    // ── PUSH NOTIFICATION DEVICES ────────────────────────
+    // Written by the app, read only by server-side code.
+    match /fcm_tokens/{devId} {
+      allow read: if isOwner();
+      allow create, update: if isMember()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.storeId == storeId();
+      allow delete: if isOwner();
+    }
+
+    // Anything not listed above is denied.
+  }
+}

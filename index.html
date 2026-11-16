@@ -491,7 +491,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.8.9</div>
+  <div class="auth-ver">v1.9.0</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -514,7 +514,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.8.9</div>
+    <div class="topbar-ver">v1.9.0</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -1178,7 +1178,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.8.9</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.9.0</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1213,6 +1213,11 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <button id="cl-toggle-top" onclick="toggleOlderCl()" style="background:none;border:.5px solid var(--border2);border-radius:20px;padding:5px 16px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer;margin-bottom:10px">Show older versions ▾</button>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.9.0 <span class="cl-date">17 Nov 2026</span></div>
+            <div class="cl-item">&#10003; New server-side security rules — owner and staff permissions are now enforced by the database, not just the screen</div>
+            <div class="cl-item">&#10003; Users added in Settings are now pre-approved by email</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.8.9 <span class="cl-date">17 Nov 2026</span></div>
             <div class="cl-item">&#10003; Cash In tab and Save cash in button are now set up once at start instead of on every refresh of the list</div>
@@ -2925,7 +2930,7 @@ window.toggleRole = async (uid, currentRole) => {
 };
 
 document.getElementById('btn-add-user').addEventListener('click', async () => {
-  const email = document.getElementById('new-user-email').value.trim();
+  const email = document.getElementById('new-user-email').value.trim().toLowerCase();
   const role  = document.getElementById('new-user-role').value;
   const err   = document.getElementById('user-add-error');
   err.textContent = '';
@@ -2935,7 +2940,8 @@ document.getElementById('btn-add-user').addEventListener('click', async () => {
   if (!snap.empty) { err.textContent = 'User already added.'; return; }
   // We store by a doc ID — use email as key since we don't have their UID here
   // They'll get their role doc updated on next login
-  await db.collection('pendingUsers').doc().set({ email, role, storeId: STORE_ID, addedBy: S.user.uid, addedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  // Doc id = email, so the security rules can check the pre-approved role on first login
+  await db.collection('pendingUsers').doc(email).set({ email, role, storeId: STORE_ID, addedBy: S.user.uid, addedAt: firebase.firestore.FieldValue.serverTimestamp() });
   document.getElementById('new-user-email').value = '';
   showToast(email + ' added as ' + role + ' — they can now log in');
   loadUsers();
@@ -2947,10 +2953,16 @@ async function registerUserOnLogin(user) {
   const snap = await userRef.get();
   if (!snap.exists) {
     // Check if there's a pending role for this email
-    const pending = await db.collection('pendingUsers').where('email','==',user.email).where('storeId','==',STORE_ID).limit(1).get();
-    const role = pending.empty ? 'staff' : pending.docs[0].data().role;
+    // Pre-approved role, if the owner added this email in Settings (doc id = email)
+    let role = 'staff', pendingRef = null;
+    try {
+      pendingRef = db.collection('pendingUsers').doc((user.email || '').toLowerCase());
+      const pending = await pendingRef.get();
+      if (pending.exists && pending.data().storeId === STORE_ID) role = pending.data().role || 'staff';
+      else pendingRef = null;
+    } catch(e) { pendingRef = null; }
     await userRef.set({ email: user.email, role, storeId: STORE_ID, createdAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    if (!pending.empty) await pending.docs[0].ref.delete();
+    if (pendingRef) { try { await pendingRef.delete(); } catch(e) {} }
   }
 }
 
