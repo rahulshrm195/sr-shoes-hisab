@@ -491,7 +491,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
 <div id="auth-screen">
   <div class="auth-logo">SR <span>Shoes</span> <span style="font-weight:400;font-size:.7em;color:var(--muted)">Hisab</span></div>
   <div class="auth-sub">hisab.srshoe.in — Daily Register</div>
-  <div class="auth-ver">v1.8.7</div>
+  <div class="auth-ver">v1.8.8</div>
   <div class="auth-card">
     <label>Email</label>
     <input type="email" id="login-email" placeholder="owner@srshoes.in" autocomplete="email">
@@ -514,7 +514,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
   <div class="topbar">
     <div class="topbar-logo">SR <span>Shoes</span> <span style="font-weight:400;color:var(--muted);font-size:.8em">Hisab</span></div>
     <div class="topbar-date" id="topbar-date"></div>
-    <div class="topbar-ver">v1.8.7</div>
+    <div class="topbar-ver">v1.8.8</div>
     <div class="topbar-gear" id="topbar-gear" title="Settings">&#9881;</div>
     <div class="topbar-user" id="topbar-user">?</div>
   </div>
@@ -1178,7 +1178,7 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
       </div>
       <div class="card">
         <div class="card-title">App</div>
-        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.8.7</span></div>
+        <div class="setting-row"><label>Version</label><span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">v1.8.8</span></div>
         <div class="setting-row"><label>Install</label><button class="btn-outline" id="btn-install" style="display:none;font-size:.75rem;padding:5px 12px">Install</button><span id="install-txt" style="font-family:var(--mono);font-size:.75rem;color:var(--muted)">Use browser menu &#8594; Add to Home Screen</span></div>
       </div>
       <button class="btn-save" id="btn-save-settings">Save settings</button>
@@ -1213,6 +1213,10 @@ textarea { width:100%; background:var(--bg3); border:.5px solid var(--border); b
         <div class="card-title">What's new</div>
         <div class="changelog">
           <button id="cl-toggle-top" onclick="toggleOlderCl()" style="background:none;border:.5px solid var(--border2);border-radius:20px;padding:5px 16px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer;margin-bottom:10px">Show older versions ▾</button>
+          <div class="cl-entry">
+            <div class="cl-ver">v1.8.8 <span class="cl-date">17 Nov 2026</span></div>
+            <div class="cl-item">&#10003; Descriptions, categories, names and notes are now shown exactly as typed — symbols like &lt; or &amp; can no longer break the screen</div>
+          </div>
           <div class="cl-entry">
             <div class="cl-ver">v1.8.7 <span class="cl-date">17 Nov 2026</span></div>
             <div class="cl-item">&#10003; Owner now sees yesterday's closing (expected cash) on the Opening tab — staff still count blind</div>
@@ -1688,6 +1692,9 @@ let S = {
 // ════════════════════════════════════════════════════
 const fmt  = n => '&#8377;' + Math.round(n||0).toLocaleString('en-IN');
 const fmtN = n => '₹' + Math.round(n||0).toLocaleString('en-IN');
+const esc  = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// For IDs placed inside onclick="fn('…')" — keep only characters that can't break out of the quotes
+const escId = v => String(v == null ? '' : v).replace(/[^A-Za-z0-9_\-]/g, '');
 const ini  = n => (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
 function dateKey(d) {
@@ -2073,7 +2080,7 @@ function checkDayClosed() {
   const closedAt = new Date(S.rec.closingTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   const pcList   = (S.postClosing || []).map(e =>
     `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.82rem">
-      <span style="color:var(--muted)">${e.desc||'—'} · ${e.type||'cash'}</span>
+      <span style="color:var(--muted)">${esc(e.desc||'—')} · ${esc(e.type||'cash')}</span>
       <span style="color:var(--accent)">+₹${Math.round(e.amt||0).toLocaleString('en-IN')}</span>
     </div>`
   ).join('');
@@ -2150,7 +2157,7 @@ window.saveDcEntry = async function() {
     const list = document.getElementById('dc-list');
     if (list) list.innerHTML = S.postClosing.map(e =>
       `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.82rem">
-        <span style="color:var(--muted)">${e.desc||'—'} · ${e.type||'cash'}</span>
+        <span style="color:var(--muted)">${esc(e.desc||'—')} · ${esc(e.type||'cash')}</span>
         <span style="color:var(--accent)">+₹${Math.round(e.amt||0).toLocaleString('en-IN')}</span>
       </div>`
     ).join('');
@@ -2370,11 +2377,11 @@ function renderCashIn() {
   list.innerHTML = S.cashIn.map(e =>
     '<div class="exp-today-row">' +
       '<div class="exp-today-left">' +
-        '<div class="exp-today-desc">' + (e.desc||'—') + '</div>' +
-        '<div class="exp-today-cat" style="color:var(--green)">' + e.cat + '</div>' +
+        '<div class="exp-today-desc">' + esc(e.desc||'—') + '</div>' +
+        '<div class="exp-today-cat" style="color:var(--green)">' + esc(e.cat) + '</div>' +
       '</div>' +
       '<div class="exp-today-amt" style="color:var(--green)">+' + fmtN(parseFloat(e.amt)||0) + '</div>' +
-      (S.role === 'owner' ? '<button class="exp-today-del" onclick="delCashIn(' + e.id + ')">&#x2715;</button>' : '') +
+      (S.role === 'owner' ? '<button class="exp-today-del" onclick="delCashIn(' + Number(e.id) + ')">&#x2715;</button>' : '') +
     '</div>'
   ).join('');
   const total = S.cashIn.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
@@ -2439,11 +2446,11 @@ document.getElementById('cashin-desc')?.addEventListener('keydown',e=>{if(e.key=
   list.innerHTML = S.expenses.map(e =>
     `<div class="exp-today-row">
       <div class="exp-today-left">
-        <div class="exp-today-desc">${e.desc || '&#8212;'}</div>
-        <div class="exp-today-cat">${e.cat}</div>
+        <div class="exp-today-desc">${e.desc ? esc(e.desc) : '&#8212;'}</div>
+        <div class="exp-today-cat">${esc(e.cat)}</div>
       </div>
       <div class="exp-today-amt">${fmtN(parseFloat(e.amt)||0)}</div>
-      ${S.role === 'owner' ? '<button class="exp-today-del" onclick="delExp(' + e.id + ')">&#x2715;</button>' : ''}
+      ${S.role === 'owner' ? '<button class="exp-today-del" onclick="delExp(' + Number(e.id) + ')">&#x2715;</button>' : ''}
     </div>`
   ).join('');
   const total = S.expenses.reduce((s,e) => s+(parseFloat(e.amt)||0), 0);
@@ -2703,7 +2710,7 @@ function updateSummaryTab() {
     if (S.postClosing.length) {
       pcSection.style.display = '';
       var pcHtml = '<div class="card-title" style="color:var(--amber)">Post-closing entries</div>';
-      S.postClosing.forEach(function(e) { var t=e.type==='online'?'UPI/Card':'Cash'; pcHtml += '<div class="sum-row"><span class="sl">'+(e.desc||'Post-closing sale')+' ('+t+')</span><span class="sv" style="color:var(--amber)">+'+fmtN(parseFloat(e.amt)||0)+'</span></div>'; });
+      S.postClosing.forEach(function(e) { var t=e.type==='online'?'UPI/Card':'Cash'; pcHtml += '<div class="sum-row"><span class="sl">'+esc(e.desc||'Post-closing sale')+' ('+t+')</span><span class="sv" style="color:var(--amber)">+'+fmtN(parseFloat(e.amt)||0)+'</span></div>'; });
       pcHtml += '<div class="sum-row strong"><span class="sl">Tomorrow opening adjusted</span><span class="sv">'+fmtN(close-taken+pcCash)+'</span></div>';
       pcSection.innerHTML = pcHtml;
     } else {
@@ -2712,7 +2719,7 @@ function updateSummaryTab() {
   }
 
   document.getElementById('sum-cats').innerHTML = Object.keys(cats).length
-    ? Object.entries(cats).map(([c,v])=>`<div class="sum-row"><span class="sl">${c}</span><span class="sv">${fmtN(v)}</span></div>`).join('')
+    ? Object.entries(cats).map(([c,v])=>`<div class="sum-row"><span class="sl">${esc(c)}</span><span class="sv">${fmtN(v)}</span></div>`).join('')
     : '<div class="sum-row"><span class="sl" style="opacity:.5">No expenses</span></div>';
 
   const ssNotes   = document.getElementById('ss-notes');   if(ssNotes)   ssNotes.textContent   = S.rec?.openingNotes || '—';
@@ -2749,7 +2756,7 @@ document.getElementById('btn-print').addEventListener('click', () => {
   if(S.rec?.countedBy)    txt += NL + 'Counted by: ' + S.rec.countedBy;
   if(S.rec?.closedBy)     txt += NL + 'Closed by : ' + S.rec.closedBy;
   const w = window.open('','_blank');
-  if(w) { w.document.write('<pre style="font-family:monospace;font-size:13px;padding:2rem">' + txt + '</pre>'); w.print(); }
+  if(w) { w.document.write('<pre style="font-family:monospace;font-size:13px;padding:2rem">' + esc(txt) + '</pre>'); w.print(); }
 });
 
 // ════════════════════════════════════════════════════
@@ -2831,7 +2838,7 @@ function renderSalesReport(recs) {
     const diff=(r.closingCash||0)-((r.openingCash||0)+(r.cashSales||0)+(r.cashInTotal||0)-(r.expenseTotal||0));
     const dc=Math.abs(diff)<1?'balanced':diff>0?'over':'short';
     const dt=new Date(r.date); const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
-    return '<tr><td>'+lb+'</td><td>'+fmtN(r.totalSales||0)+'</td><td>'+fmtN(r.phonepe||0)+'</td><td>'+fmtN(r.cardSales||0)+'</td><td>'+fmtN(r.cashSales||0)+'</td><td>'+fmtN(r.expenseTotal||0)+'</td><td>'+fmtN((r.totalSales||0)-(r.expenseTotal||0))+'</td><td class="'+dc+'">'+(Math.abs(diff)<1?'Balanced':(diff>0?'+':'')+fmtN(diff))+'</td><td>'+(r.closedBy||'—')+'</td></tr>';
+    return '<tr><td>'+lb+'</td><td>'+fmtN(r.totalSales||0)+'</td><td>'+fmtN(r.phonepe||0)+'</td><td>'+fmtN(r.cardSales||0)+'</td><td>'+fmtN(r.cashSales||0)+'</td><td>'+fmtN(r.expenseTotal||0)+'</td><td>'+fmtN((r.totalSales||0)-(r.expenseTotal||0))+'</td><td class="'+dc+'">'+(Math.abs(diff)<1?'Balanced':(diff>0?'+':'')+fmtN(diff))+'</td><td>'+esc(r.closedBy||'—')+'</td></tr>';
   }).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:1rem">No records</td></tr>';
   } catch(e) { console.error('[renderSales]', e); }
 }
@@ -2853,18 +2860,18 @@ function renderExpenseReport(recs) {
   const med=document.getElementById('m-exp-days'); if(med) med.textContent=dwe;
   const sorted=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]); const maxCat=sorted[0]?.[1]||1;
   const cats=document.getElementById('report-exp-cats');
-  if(cats) cats.innerHTML=sorted.length?sorted.map(([cat,amt])=>'<div class="exp-cat-row"><div><div>'+cat+'</div><div class="exp-cat-bar" style="width:'+Math.round(amt/maxCat*100)+'%"></div></div><div style="font-family:var(--mono);font-weight:600">'+fmtN(amt)+'</div></div>').join(''):'<div style="font-size:.82rem;color:var(--hint);padding:10px 0">No expenses</div>';
+  if(cats) cats.innerHTML=sorted.length?sorted.map(([cat,amt])=>'<div class="exp-cat-row"><div><div>'+esc(cat)+'</div><div class="exp-cat-bar" style="width:'+Math.round(amt/maxCat*100)+'%"></div></div><div style="font-family:var(--mono);font-weight:600">'+fmtN(amt)+'</div></div>').join(''):'<div style="font-size:.82rem;color:var(--hint);padding:10px 0">No expenses</div>';
   const tbody=document.getElementById('exp-table-body'); if(!tbody) return;
-  tbody.innerHTML=allExp.length?allExp.map(e=>{const dt=new Date(e.date);const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return '<tr><td>'+lb+'</td><td>'+e.cat+'</td><td>'+(e.desc||'—')+'</td><td>'+fmtN(e.amt)+'</td></tr>';}).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--hint);padding:1rem">No cash out entries</td></tr>';
+  tbody.innerHTML=allExp.length?allExp.map(e=>{const dt=new Date(e.date);const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return '<tr><td>'+lb+'</td><td>'+esc(e.cat)+'</td><td>'+esc(e.desc||'—')+'</td><td>'+fmtN(e.amt)+'</td></tr>';}).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--hint);padding:1rem">No cash out entries</td></tr>';
 
   // Cash In section
   const inCats=document.getElementById('report-cashin-cats');
   if(inCats){
     const sortedIn=Object.entries(inTotals).sort((a,b)=>b[1]-a[1]); const maxIn=sortedIn[0]?.[1]||1;
-    inCats.innerHTML=sortedIn.length?sortedIn.map(([cat,amt])=>'<div class="exp-cat-row"><div><div>'+cat+'</div><div class="exp-cat-bar" style="width:'+Math.round(amt/maxIn*100)+'%;background:var(--green)"></div></div><div style="font-family:var(--mono);font-weight:600;color:var(--green)">+'+fmtN(amt)+'</div></div>').join(''):'<div style="font-size:.82rem;color:var(--hint);padding:8px 0">No cash in entries</div>';
+    inCats.innerHTML=sortedIn.length?sortedIn.map(([cat,amt])=>'<div class="exp-cat-row"><div><div>'+esc(cat)+'</div><div class="exp-cat-bar" style="width:'+Math.round(amt/maxIn*100)+'%;background:var(--green)"></div></div><div style="font-family:var(--mono);font-weight:600;color:var(--green)">+'+fmtN(amt)+'</div></div>').join(''):'<div style="font-size:.82rem;color:var(--hint);padding:8px 0">No cash in entries</div>';
   }
   const inTbody=document.getElementById('cashin-report-body');
-  if(inTbody) inTbody.innerHTML=allIn.length?allIn.map(e=>{const dt=new Date(e.date);const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return '<tr><td>'+lb+'</td><td style="color:var(--green)">'+e.cat+'</td><td>'+(e.desc||'—')+'</td><td style="color:var(--green)">+'+fmtN(e.amt)+'</td></tr>';}).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--hint);padding:1rem">No cash in entries</td></tr>';
+  if(inTbody) inTbody.innerHTML=allIn.length?allIn.map(e=>{const dt=new Date(e.date);const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return '<tr><td>'+lb+'</td><td style="color:var(--green)">'+esc(e.cat)+'</td><td>'+esc(e.desc||'—')+'</td><td style="color:var(--green)">+'+fmtN(e.amt)+'</td></tr>';}).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--hint);padding:1rem">No cash in entries</td></tr>';
 }
 
 function renderOpeningReport(recs) {
@@ -2877,7 +2884,7 @@ function renderOpeningReport(recs) {
     const dt=new Date(r.date); const lb=dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
     const exp=r.expectedOpening; const act=r.openingCash||0; const diff=exp!=null?act-exp:null;
     const st=diff==null?'—':Math.abs(diff)<1?'<span class="balanced">Match</span>':'<span class="short">Mismatch</span>';
-    return '<tr><td>'+lb+'</td><td>'+fmtN(act)+'</td><td>'+(exp!=null?fmtN(exp):'—')+'</td><td>'+(diff==null?'—':(diff>=0?'+':'')+fmtN(diff))+'</td><td>'+st+'</td><td>'+(r.countedBy||'—')+'</td><td>'+(r.mismatchReason||'—')+'</td></tr>';
+    return '<tr><td>'+lb+'</td><td>'+fmtN(act)+'</td><td>'+(exp!=null?fmtN(exp):'—')+'</td><td>'+(diff==null?'—':(diff>=0?'+':'')+fmtN(diff))+'</td><td>'+st+'</td><td>'+esc(r.countedBy||'—')+'</td><td>'+esc(r.mismatchReason||'—')+'</td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--hint);padding:1rem">No data</td></tr>';
 }
 
@@ -2892,13 +2899,13 @@ async function loadUsers() {
     document.getElementById('users-list').innerHTML = users.length
       ? users.map(u => `
         <div class="staff-item">
-          <div class="avatar">${ini(u.email)}</div>
+          <div class="avatar">${esc(ini(u.email))}</div>
           <div>
-            <div style="font-size:.85rem;font-weight:600">${u.email}</div>
-            <div style="font-size:.7rem;font-family:var(--mono);color:var(--muted)">${u.role||'staff'}</div>
+            <div style="font-size:.85rem;font-weight:600">${esc(u.email)}</div>
+            <div style="font-size:.7rem;font-family:var(--mono);color:var(--muted)">${esc(u.role||'staff')}</div>
           </div>
-          <span class="role-badge role-${u.role||'staff'}">${u.role||'staff'}</span>
-          <button class="btn-outline" onclick="toggleRole('${u.uid}','${u.role||'staff'}')" style="padding:4px 10px;font-size:.68rem;margin-left:8px">
+          <span class="role-badge role-${escId(u.role||'staff')}">${esc(u.role||'staff')}</span>
+          <button class="btn-outline" onclick="toggleRole('${escId(u.uid)}','${escId(u.role||'staff')}')" style="padding:4px 10px;font-size:.68rem;margin-left:8px">
             ${u.role==='owner' ? 'Make staff' : 'Make owner'}
           </button>
         </div>`).join('')
@@ -2989,7 +2996,7 @@ function renderCatList() {
   list.innerHTML = EXP_CATS.map((cat, i) => {
     const isDefault = DEFAULT_CATS.includes(cat);
     return '<div class="cat-item">' +
-      '<span class="cat-item-name">' + cat +
+      '<span class="cat-item-name">' + esc(cat) +
         (isDefault ? '<span class="cat-item-default">default</span>' : '') +
       '</span>' +
       '<button class="cat-del" onclick="deleteCat(' + i + ')" title="Delete">' +
@@ -3346,11 +3353,11 @@ function renderPostClosing() {
   list.innerHTML = S.postClosing.map(e =>
     '<div class="exp-today-row">' +
       '<div class="exp-today-left">' +
-        '<div class="exp-today-desc">' + (e.desc||'Post-closing sale') + '</div>' +
+        '<div class="exp-today-desc">' + esc(e.desc||'Post-closing sale') + '</div>' +
         '<div class="exp-today-cat" style="color:var(--amber)">' + (e.type==='online'?'UPI/Card':'Cash') + ' — Post-closing</div>' +
       '</div>' +
       '<div class="exp-today-amt" style="color:var(--amber)">+' + fmtN(parseFloat(e.amt)||0) + '</div>' +
-      (S.role === 'owner' ? '<button class="exp-today-del" onclick="delPostClosing(' + e.id + ')">&#x2715;</button>' : '') +
+      (S.role === 'owner' ? '<button class="exp-today-del" onclick="delPostClosing(' + Number(e.id) + ')">&#x2715;</button>' : '') +
     '</div>'
   ).join('') +
   '<div class="total-row" style="margin-top:8px"><span class="total-label">Total post-closing</span><span class="total-val" style="color:var(--amber)">' + fmtN(total) + '</span></div>' +
@@ -3629,16 +3636,16 @@ function renderSupplierList() {
     var balLabel = Math.abs(bal) < 1 ? 'Settled' : bal > 0 ? 'We owe' : 'They owe';
     var lastTxn  = txns.length ? txns[txns.length-1].date : null;
     var contact  = '';
-    if (s.phone) contact += '\uD83D\uDCDE ' + s.phone;
+    if (s.phone) contact += '\uD83D\uDCDE ' + esc(s.phone);
     if (s.phone && s.city) contact += ' &middot; ';
-    if (s.city)  contact += '\uD83D\uDCCD ' + s.city;
-    var lastLine = lastTxn ? '<div style="font-size:.68rem;font-family:var(--mono);color:var(--hint);margin-top:3px">Last: ' + lastTxn + '</div>' : '';
+    if (s.city)  contact += '\uD83D\uDCCD ' + esc(s.city);
+    var lastLine = lastTxn ? '<div style="font-size:.68rem;font-family:var(--mono);color:var(--hint);margin-top:3px">Last: ' + esc(lastTxn) + '</div>' : '';
     html +=
-      '<div onclick="openSupLedger(\'' + s.id + '\')"' +
+      '<div onclick="openSupLedger(\'' + escId(s.id) + '\')"' +
         ' style="background:var(--bg2);border:.5px solid var(--border);border-radius:var(--rl);padding:1rem 1.1rem;margin-bottom:.625rem;cursor:pointer">' +
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">' +
           '<div style="min-width:0">' +
-            '<div style="font-size:.95rem;font-weight:700;margin-bottom:3px">' + s.name + '</div>' +
+            '<div style="font-size:.95rem;font-weight:700;margin-bottom:3px">' + esc(s.name) + '</div>' +
             '<div style="font-size:.75rem;font-family:var(--mono);color:var(--muted)">' + contact + '</div>' +
             lastLine +
           '</div>' +
@@ -3682,13 +3689,13 @@ function closeSupLedger() {
 
 function renderLedgerInfo(sup) {
   var el = document.getElementById('sup-ledger-info');
-  var phoneHtml = sup.phone ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted)">&#128222; <a href="tel:' + sup.phone + '" style="color:var(--accent);text-decoration:none">' + sup.phone + '</a></div>' : '';
-  var cityHtml  = sup.city  ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted);margin-top:2px">&#128205; ' + sup.city + '</div>' : '';
-  var notesHtml = sup.notes ? '<div style="font-size:.78rem;font-family:var(--mono);color:var(--hint);margin-top:4px">' + sup.notes + '</div>' : '';
+  var phoneHtml = sup.phone ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted)">&#128222; <a href="tel:' + esc(sup.phone) + '" style="color:var(--accent);text-decoration:none">' + esc(sup.phone) + '</a></div>' : '';
+  var cityHtml  = sup.city  ? '<div style="font-size:.82rem;font-family:var(--mono);color:var(--muted);margin-top:2px">&#128205; ' + esc(sup.city) + '</div>' : '';
+  var notesHtml = sup.notes ? '<div style="font-size:.78rem;font-family:var(--mono);color:var(--hint);margin-top:4px">' + esc(sup.notes) + '</div>' : '';
   el.innerHTML =
     '<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);padding:.875rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:10px">' +
       '<div>' + phoneHtml + cityHtml + notesHtml + '</div>' +
-      '<button onclick="openSupModal(\'' + (sup.id||'') + '\')" style="background:none;border:.5px solid var(--border2);border-radius:var(--r);padding:6px 12px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer">Edit</button>' +
+      '<button onclick="openSupModal(\'' + escId(sup.id) + '\')" style="background:none;border:.5px solid var(--border2);border-radius:var(--r);padding:6px 12px;font-family:var(--mono);font-size:.75rem;color:var(--muted);cursor:pointer">Edit</button>' +
     '</div>';
 }
 
@@ -3755,19 +3762,19 @@ function renderLedgerTxns(sup) {
 
     // Build row safely — no nested backticks (Safari compatibility)
     const ownerAttrs = S.role==='owner'
-      ? ' onclick="delTxn(\''+t.id+'\',\''+sup.id+'\') " style="cursor:pointer"'
+      ? ' onclick="delTxn(\''+escId(t.id)+'\',\''+escId(sup.id)+'\') " style="cursor:pointer"'
       : '';
     const detailsHtml = details
-      ? '<div style="color:var(--muted);font-size:.7rem;margin-top:2px">'+details+'</div>'
+      ? '<div style="color:var(--muted);font-size:.7rem;margin-top:2px">'+esc(details)+'</div>'
       : '';
     rows.push(
       '<div style="display:grid;grid-template-columns:80px 1fr auto auto;gap:8px;align-items:start;padding:9px 0;border-bottom:.5px solid var(--border);font-family:var(--mono);font-size:.78rem"'
       + ownerAttrs + '>'
-      + '<div style="color:var(--hint)">' + (t.date||'') + '</div>'
+      + '<div style="color:var(--hint)">' + esc(t.date||'') + '</div>'
       + '<div>'
-      + '<div style="color:var(--text)">' + cfg.icon + ' ' + cfg.label + '</div>'
+      + '<div style="color:var(--text)">' + cfg.icon + ' ' + esc(cfg.label) + '</div>'
       + detailsHtml
-      + '<div style="color:var(--hint);font-size:.68rem;margin-top:1px">By: ' + (t.by||'—') + '</div>'
+      + '<div style="color:var(--hint);font-size:.68rem;margin-top:1px">By: ' + esc(t.by||'—') + '</div>'
       + '</div>'
       + '<div style="color:' + amtCol + ';white-space:nowrap">' + (signed>0?'+':'-') + supFmt(t.amount) + '</div>'
       + '<div style="color:' + balCol + ';font-weight:600;white-space:nowrap">' + supFmt(runBal) + '</div>'
@@ -4057,20 +4064,20 @@ async function renderSupReport() {
     var s = row.s; var bal = row.bal; var purchased = row.purchased; var paid = row.paid; var lastTxn = row.lastTxn;
     var col      = Math.abs(bal)<1 ? 'var(--muted)' : bal>0 ? 'var(--red)' : 'var(--green)';
     var balLabel = Math.abs(bal)<1 ? 'Settled' : bal>0 ? supFmt(bal) : '-'+supFmt(bal);
-    var cityHtml = s.city ? '<div style="font-size:.68rem;color:var(--hint)">'+s.city+'</div>' : '';
+    var cityHtml = s.city ? '<div style="font-size:.68rem;color:var(--hint)">'+esc(s.city)+'</div>' : '';
     tbodyHtml +=
       '<tr style="border-bottom:.5px solid var(--border);cursor:pointer"' +
-        ' onclick="openSupLedger(\''+s.id+'\');supSwitchTab(\'list\')"' +
+        ' onclick="openSupLedger(\''+escId(s.id)+'\');supSwitchTab(\'list\')"' +
         ' onmouseover="this.style.background=\'var(--bg3)\'"' +
         ' onmouseout="this.style.background=\'\'">' +
         '<td style="padding:8px 4px">' +
-          '<div style="font-weight:600;color:var(--text)">'+s.name+'</div>' +
+          '<div style="font-weight:600;color:var(--text)">'+esc(s.name)+'</div>' +
           cityHtml +
         '</td>' +
         '<td style="padding:8px 4px;text-align:right;color:var(--text)">'+supFmt(purchased)+'</td>' +
         '<td style="padding:8px 4px;text-align:right;color:var(--green)">'+supFmt(paid)+'</td>' +
         '<td style="padding:8px 4px;text-align:right;color:'+col+';font-weight:700">'+balLabel+'</td>' +
-        '<td style="padding:8px 4px;text-align:right;color:var(--hint)">'+lastTxn+'</td>' +
+        '<td style="padding:8px 4px;text-align:right;color:var(--hint)">'+esc(lastTxn)+'</td>' +
       '</tr>';
   });
 
